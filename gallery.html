@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <title>自然大叔｜作品清單</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <!-- 新增 favicon -->
+  <link rel="icon" href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png" type="image/png"/>
+  <style id="cols-override">
+  /* 固定 3 欄，上下各 3 ；小尺寸降為 2/1 欄 */
+  #list.grid { display:grid; grid-template-columns: repeat(3, 1fr) !important; gap: var(--gap, 12px); }
+  #list.grid > .card { grid-column: auto !important; }
+  @media (max-width: 900px){ #list.grid { grid-template-columns: repeat(2, 1fr) !important; } }
+  @media (max-width: 600px){ #list.grid { grid-template-columns: 1fr !important; } }
+</style>
+  <link rel="stylesheet" href="assets/styles.css">
+<style id="logo-fix">
+  /* 限制頁首 LOGO 尺寸 */
+  header .logo img { height: 40px !important; width: auto !important; max-height: 40px !important; object-fit: contain !important; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="logo" href="./">
+        <img src="logo.png">
+      </div>
+      <form id="filters" class="searchbar" onsubmit="event.preventDefault(); load()">
+        <input id="q" type="search" placeholder="搜尋標題或標籤…" />
+        <select id="sort">
+          <option value="date_desc">最新優先</option>
+          <option value="date_asc">最舊優先</option>
+          <option value="title_asc">標題 A→Z</option>
+          <option value="title_desc">標題 Z→A</option>
+        </select>
+        <button type="submit">套用</button>
+      </form>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1>作品清單</h1> <span id="count" class="muted"></span>
+    <div id="list" class="grid" aria-live="polite"></div>
+    <div id="pager" class="pager" hidden>
+      <button id="prev">上一頁</button>
+      <span id="pageInfo" class="muted"></span>
+      <button id="next">下一頁</button>
+    </div>
+    <div id="empty" class="empty" hidden>目前尚無作品</div>
+  </main>
+
+  <template id="card-tpl">
+    <article class="card">
+      <a class="thumb" target="_blank" rel="noopener" aria-label="開啟作品"></a>
+      <div class="meta">
+        <div class="row">
+          <a class="title" target="_blank" rel="noopener"></a>
+          <span class="muted date"></span>
+        </div>
+        <div class="tags"></div>
+      </div>
+    </article>
+  </template>
+
+  <script>
+    const PAGE_SIZE = 6;
+    let currentPage = 1;
+    let lastData = [];
+    async function fetchList() {
+      const url = new URL(location.origin + '/.netlify/functions/list-posts');
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('載入作品清單失敗');
+      const json = await r.json();
+      return Array.isArray(json.items) ? json.items : [];
+    }
+    function applyFilters(items){
+      const q = document.querySelector('#q').value.trim().toLowerCase();
+      const sort = document.querySelector('#sort').value;
+      let out = items;
+      if (q) {
+        out = out.filter(x => (x.title||'').toLowerCase().includes(q) || (x.tags||[]).some(t => t.toLowerCase().includes(q)) || (x.slug||'').toLowerCase().includes(q));
+      }
+      out = out.slice();
+      out.sort((a,b)=>{
+        if (sort === 'date_desc') return new Date(b.date || b.created_at || 0) - new Date(a.date || a.created_at || 0);
+        if (sort === 'date_asc') return new Date(a.date || a.created_at || 0) - new Date(b.date || b.created_at || 0);
+        if (sort === 'title_asc') return String(a.title||'').localeCompare(String(b.title||''));
+        if (sort === 'title_desc') return String(b.title||'').localeCompare(String(a.title||''));
+        return 0;
+      });
+      return out;
+    }
+    function render(items){ try{ document.getElementById('count').textContent = `共 ${items.length} 筆作品`; }catch(_){} 
+      const list = document.querySelector('#list');
+      const empty = document.querySelector('#empty');
+      const pager = document.querySelector('#pager');
+      list.innerHTML = '';
+      if (!items.length){ empty.hidden = false; pager.hidden = true; return; } else { empty.hidden = true; }
+      const start = (currentPage-1) * PAGE_SIZE;
+      const pageItems = items.slice(start, start + PAGE_SIZE);
+      const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+      for (const it of pageItems){
+        const tpl = document.querySelector('#card-tpl').content.cloneNode(true);
+        const detailUrl = `post.html?slug=${encodeURIComponent(it.slug)}`;
+        const viewUrl = it.preview || it.cover || it.items?.[0]?.url || '#';
+        tpl.querySelector('.thumb').href = detailUrl;
+        tpl.querySelector('.thumb').style.backgroundImage = viewUrl ? `url("${viewUrl}")` : '';
+        tpl.querySelector('.thumb').style.backgroundSize = 'cover';
+        tpl.querySelector('.thumb').style.backgroundPosition = 'center';
+        const title = it.title || it.slug || '未命名';
+        tpl.querySelector('.title').textContent = title;
+        tpl.querySelector('.title').href = detailUrl;
+        const dateStr = new Date(it.date || it.created_at || Date.now()).toLocaleDateString('zh-TW');
+        tpl.querySelector('.date').textContent = dateStr;
+        const tagsWrap = tpl.querySelector('.tags');
+        if (tagsWrap){
+          const tags = Array.isArray(it.tags) ? it.tags : (typeof it.tags === 'string' ? it.tags.split(/[,，\s]+/).filter(Boolean) : []);
+          tags.forEach(t=>{ const span=document.createElement('span'); span.className='tag'; span.textContent=t; tagsWrap.appendChild(span); });
+        }
+        list.appendChild(tpl);
+      }
+      pager.hidden = totalPages <= 1;
+      document.querySelector('#pageInfo').textContent = `${currentPage} / ${totalPages}`;
+      document.querySelector('#prev').disabled = currentPage <= 1;
+      document.querySelector('#next').disabled = currentPage >= totalPages;
+      document.querySelector('#prev').onclick = () => { if(currentPage>1){ currentPage--; render(applyFilters(lastData)); } };
+      document.querySelector('#next').onclick = () => { if(currentPage<totalPages){ currentPage++; render(applyFilters(lastData)); } };
+    }
+    async function load(){ try{ if (!lastData.length){ lastData = await fetchList(); } const filtered = applyFilters(lastData); currentPage = 1; render(filtered);}catch(e){ document.querySelector('#list').innerHTML = `<div class=\"empty\">${e.message||e}</div>`; } }
+    load();
+  </script>
+</body>
+</html>
