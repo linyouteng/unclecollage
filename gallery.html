@@ -1,75 +1,77 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="zh-Hant">
 <head>
-  <meta name="theme-color" content="#0f172a">
-<meta charset="utf-8">
-  <title>自然大叔｜作品清單</title>
-  <link rel="icon" type="image/png" href="logo.png">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-  <!-- 新增 favicon -->
-  <link rel="icon" type="image/png" href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png"/>
-  <style id="cols-override">
+<meta content="#0f172a" name="theme-color"/>
+<meta charset="utf-8"/>
+<title>自然大叔｜作品清單</title>
+<link href="logo.png" rel="icon" type="image/png"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<!-- 新增 favicon -->
+<link href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png" rel="icon" type="image/png">
+<style id="cols-override">
   /* 固定 3 欄，上下各 3 ；小尺寸降為 2/1 欄 */
   #list.grid { display:grid; grid-template-columns: repeat(3, 1fr) !important; gap: var(--gap, 12px); }
   #list.grid > .card { grid-column: auto !important; }
   @media (max-width: 900px){ #list.grid { grid-template-columns: repeat(2, 1fr) !important; } }
   @media (max-width: 600px){ #list.grid { grid-template-columns: 1fr !important; } }
 </style>
-  <link rel="stylesheet" href="assets/styles.css">
+<link href="assets/styles.css" rel="stylesheet"/>
 <style id="logo-fix">
   /* 限制頁首 LOGO 尺寸 */
   header .logo img { height: 40px !important; width: auto !important; max-height: 40px !important; object-fit: contain !important; }
 </style>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
+<script src="https://cdn.tailwindcss.com"></script>
+</link><style>
+/* Auto-injected: toggle date visibility via URL param */
+.work-date{display:none;}
+.show-dates .work-date{display:inline;}
+</style></head>
 <body>
-  <header>
-    <meta name="theme-color" content="#0f172a">
+<header>
+<meta content="#0f172a" name="theme-color"/>
 <div class="container nav">
-      <div class="logo" href="./">
-        <img src="logo.png" alt="logo">
-      </div>
-      <form id="filters" class="searchbar" onsubmit="event.preventDefault(); load()">
-        <input id="q" type="search" placeholder="搜尋標題或標籤…" /><button id="searchBtn" type="button" aria-label="搜尋" title="搜尋" style="margin-left:8px; padding:6px 10px; border-radius:8px; border:1px solid #cbd5e1; background:#fff; cursor:pointer;">🔍</button>
-        <select id="sort">
-          <option value="date_desc">最新優先</option>
-          <option value="date_asc">最舊優先</option>
-          <option value="title_asc">標題 A→Z</option>
-          <option value="title_desc">標題 Z→A</option>
-        </select>
-        <button type="submit">套用</button>
-      </form>
-    </div>
-  </header>
-
-  <main class="container">
-    <h1>作品清單</h1> <span id="count" class="muted"></span>
-    <div id="list" class="grid" aria-live="polite"></div>
-    <div id="pager" class="pager" hidden>
-      <button id="prev">上一頁</button>
-      <span id="pageInfo" class="muted"></span>
-      <button id="next">下一頁</button>
-    </div>
-    <div id="empty" class="empty" hidden>目前尚無作品</div>
-  </main>
-
-  <template id="card-tpl">
-    <article class="card">
-      <a class="thumb" target="_blank" rel="noopener" aria-label="開啟作品"></a>
-      <div class="meta">
-        <div class="row">
-          <a class="title" target="_blank" rel="noopener"></a>
-          <span class="muted date"></span>
-        </div>
-        <div class="tags"></div>
-      </div>
-    </article>
-  </template>
-
-  <script>
+<div class="logo" href="./">
+<img alt="logo" src="logo.png"/>
+</div>
+<form class="searchbar" id="filters" onsubmit="event.preventDefault(); load()">
+<input id="q" placeholder="搜尋標題或標籤…" type="search"/><button aria-label="搜尋" id="searchBtn" style="margin-left:8px; padding:6px 10px; border-radius:8px; border:1px solid #cbd5e1; background:#fff; cursor:pointer;" title="搜尋" type="button">🔍</button>
+<select id="sort">
+<option value="date_desc">最新優先</option>
+<option value="date_asc">最舊優先</option>
+<option value="title_asc">標題 A→Z</option>
+<option value="title_desc">標題 Z→A</option>
+</select>
+<button type="submit">套用</button>
+</form>
+</div>
+</header>
+<main class="container">
+<h1>作品清單</h1> <span class="muted" id="count"></span>
+<div aria-live="polite" class="grid" id="list"></div>
+<div class="pager" hidden="" id="pager">
+<button id="prev">上一頁</button>
+<span class="muted" id="pageInfo"></span>
+<button id="next">下一頁</button>
+</div>
+<div class="empty" hidden="" id="empty">目前尚無作品</div>
+</main>
+<template id="card-tpl">
+<article class="card">
+<a aria-label="開啟作品" class="thumb" rel="noopener" target="_blank"></a>
+<div class="meta">
+<div class="row">
+<a class="title" rel="noopener" target="_blank"></a>
+<span class="muted date"></span>
+</div>
+<div class="tags"></div>
+</div>
+</article>
+</template>
+<script>
     const PAGE_SIZE = 6;
     let currentPage = 1;
     let lastData = [];
@@ -147,5 +149,15 @@
     const btn=document.getElementById('searchBtn'); if(btn){ btn.addEventListener('click', ()=>{ load(); }); }
     load();
   </script>
-</body>
+<script>
+/* Auto-injected: add .show-dates on ?showDates=1 */
+(function(){
+  try{
+    var params = new URLSearchParams(location.search);
+    if (params.get('showDates') === '1') {
+      document.body && document.body.classList.add('show-dates');
+    }
+  }catch(e){}
+})();
+</script></body>
 </html>

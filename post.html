@@ -1,16 +1,17 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="zh-Hant">
 <head>
-  <meta name="theme-color" content="#0f172a">
-<meta charset="utf-8">
-  <title>作品讀取中...</title>
-  <link rel="icon" type="image/png" href="logo.png">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-  <!-- 新增 favicon -->
-  <style>
+<meta content="#0f172a" name="theme-color"/>
+<meta charset="utf-8"/>
+<title>作品讀取中...</title>
+<link href="logo.png" rel="icon" type="image/png"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<!-- 新增 favicon -->
+<style>
     :root { --max-w: 1120px; --fg:#0d0d0d; --muted:#666; --bg:#fff; --brand:#111827; --radius: 14px; }
     *{ box-sizing:border-box }
     html, body { margin:0; padding:0; font-family: 'Noto Sans TC', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; color: var(--fg); background: var(--bg); }
@@ -36,34 +37,35 @@
     .meta { display:flex; align-items:center; gap:8px; color:#777; font-size:14px }
     @media (min-width: 900px){ .card{ grid-column: span 6 } }
   </style>
-  <link rel="stylesheet" href="assets/styles.css">
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
+<link href="assets/styles.css" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+/* Auto-injected: toggle date visibility via URL param */
+.work-date{display:none;}
+.show-dates .work-date{display:inline;}
+</style></head>
 <body>
-  <header>
-    <meta name="theme-color" content="#0f172a">
+<header>
+<meta content="#0f172a" name="theme-color"/>
 <div class="container nav">
-      <div class="logo" href="index.html">
-        <img src="logo.png" alt="logo">
-      </div>
-      <a class="ghost" href="gallery.html">回到清單</a>
-    </div>
-  </header>
-
-  <main class="container" id="main">
-    <h1 class="title" id="title">載入中…</h1>
-    <div class="meta"><span id="date"></span><span id="slug" class="muted"></span></div>
-    <div class="tags" id="tags"></div>
-    <div class="desc" id="desc"></div>
-    <div class="actions">
-      <a id="zip" class="ghost" href="#">下載 ZIP</a>
-<a id="share" class="ghost" href="#" target="_blank" rel="noopener">連結分享</a>
-    </div>
-
-    <section class="grid" id="images"></section>
-  </main>
-
-  <script>
+<div class="logo" href="index.html">
+<img alt="logo" src="logo.png"/>
+</div>
+<a class="ghost" href="gallery.html">回到清單</a>
+</div>
+</header>
+<main class="container" id="main">
+<h1 class="title" id="title">載入中…</h1>
+<div class="meta"><span id="date"></span><span class="muted" id="slug"></span></div>
+<div class="tags" id="tags"></div>
+<div class="desc" id="desc"></div>
+<div class="actions">
+<a class="ghost" href="#" id="zip">下載 ZIP</a>
+<a class="ghost" href="#" id="share" rel="noopener" target="_blank">連結分享</a>
+</div>
+<section class="grid" id="images"></section>
+</main>
+<script>
 function setText(id, text){ var el = qsel(id); if (el) el.textContent = text; }
 function setHTML(id, html){ var el = qsel(id); if (el) el.innerHTML = html; }
 function clearHTML(id){ var el = qsel(id); if (el) el.innerHTML = ''; }
@@ -206,17 +208,27 @@ load();
 
 </script>
 <div id="lightbox-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:1000;">
-    <button id="lb-close" aria-label="關閉" style="position:absolute;top:8px;right:8px;padding:12px 14px;border:1px solid #666;background:#111;color:#fff;border-radius:12px;cursor:pointer;font-weight:800;font-size:16px;z-index:1001">✕</button>
-    <div id="lb-dialog" style="position:relative;max-width:94vw;max-height:92vh;display:flex;flex-direction:column;align-items:center;">
-      <figure style="max-width:94vw;max-height:84vh;margin:0;text-align:center">
-        <img id="lb-img" alt="" style="max-width:94vw;max-height:72vh;border-radius:12px;display:block;margin:0 auto" />
-        <figcaption id="lb-cap" style="color:#ddd;font-size:16px;margin-top:10px"></figcaption>
-        <div id="lb-count" style="color:#bbb;font-size:13px;margin-top:4px"></div>
-      </figure>
-      <div id="lb-bar" style="margin-top:10px;gap:12px">
-        <button id="lb-prev" aria-label="上一張" style="padding:12px 16px;border:1px solid #666;background:#111;color:#fff;border-radius:12px;cursor:pointer;font-weight:800;font-size:18px">⟨ 上一張</button>
-        <button id="lb-next" aria-label="下一張" style="padding:12px 16px;border:1px solid #666;background:#111;color:#fff;border-radius:12px;cursor:pointer;font-weight:800;font-size:18px">下一張 ⟩</button>
-      </div>
-    </div>
-  </div></body>
+<button aria-label="關閉" id="lb-close" style="position:absolute;top:8px;right:8px;padding:12px 14px;border:1px solid #666;background:#111;color:#fff;border-radius:12px;cursor:pointer;font-weight:800;font-size:16px;z-index:1001">✕</button>
+<div id="lb-dialog" style="position:relative;max-width:94vw;max-height:92vh;display:flex;flex-direction:column;align-items:center;">
+<figure style="max-width:94vw;max-height:84vh;margin:0;text-align:center">
+<img alt="" id="lb-img" style="max-width:94vw;max-height:72vh;border-radius:12px;display:block;margin:0 auto">
+<figcaption id="lb-cap" style="color:#ddd;font-size:16px;margin-top:10px"></figcaption>
+<div id="lb-count" style="color:#bbb;font-size:13px;margin-top:4px"></div>
+</img></figure>
+<div id="lb-bar" style="margin-top:10px;gap:12px">
+<button aria-label="上一張" id="lb-prev" style="padding:12px 16px;border:1px solid #666;background:#111;color:#fff;border-radius:12px;cursor:pointer;font-weight:800;font-size:18px">⟨ 上一張</button>
+<button aria-label="下一張" id="lb-next" style="padding:12px 16px;border:1px solid #666;background:#111;color:#fff;border-radius:12px;cursor:pointer;font-weight:800;font-size:18px">下一張 ⟩</button>
+</div>
+</div>
+</div><script>
+/* Auto-injected: add .show-dates on ?showDates=1 */
+(function(){
+  try{
+    var params = new URLSearchParams(location.search);
+    if (params.get('showDates') === '1') {
+      document.body && document.body.classList.add('show-dates');
+    }
+  }catch(e){}
+})();
+</script></body>
 </html>

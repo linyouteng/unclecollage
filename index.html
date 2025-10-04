@@ -1,20 +1,20 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f172a" />
-  <title>清洗前後拼貼照片分享</title>
-  <link rel="icon" type="image/png" href="logo.png">
-<meta name="description" content="上傳清洗前後拼貼照片，加入說明、拖曳排序，並一鍵產生分享連結與 ZIP 下載。" />
-
-  <!-- ✅ 新增 favicon -->
-  <link rel="apple-touch-icon" sizes="180x180" href="https://res.cloudinary.com/dijzndzw2/image/upload/c_scale,w_180/v1757176751/logo-3_hddq08.png">
-  <link rel="shortcut icon" href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png" />
-  <!-- ✅ favicon 結束 -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" defer></script>
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport">
+<meta content="#0f172a" name="theme-color"/>
+<title>清洗前後拼貼照片分享</title>
+<link href="logo.png" rel="icon" type="image/png"/>
+<meta content="上傳清洗前後拼貼照片，加入說明、拖曳排序，並一鍵產生分享連結與 ZIP 下載。" name="description"/>
+<!-- ✅ 新增 favicon -->
+<link href="https://res.cloudinary.com/dijzndzw2/image/upload/c_scale,w_180/v1757176751/logo-3_hddq08.png" rel="apple-touch-icon" sizes="180x180"/>
+<link href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png" rel="shortcut icon">
+<!-- ✅ favicon 結束 -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer="" src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<style>
     :root { color-scheme: light dark; }
     .btn { display:inline-flex; align-items:center; justify-content:center; padding:0.75rem 1rem; border-radius: 1rem; border:1px solid rgba(100,116,139,.5); font-weight:600; }
     .btn-primary { background:#0f172a; color:#fff; border-color:transparent; box-shadow:0 10px 24px rgba(15,23,42,.15); }
@@ -38,103 +38,95 @@
     .lb-controls { position:absolute; left:0; right:0; bottom:16px; display:flex; align-items:center; justify-content:center; gap:16px; pointer-events:none; }
     .lb-controls .navBtn { pointer-events:auto; font-size:20px; color:#fff; width:56px; height:56px; display:flex; align-items:center; justify-content:center; border-radius:9999px; background:rgba(17,24,39,.6); border:1px solid rgba(255,255,255,.2); backdrop-filter: blur(6px); }
   </style>
-
 <style>
 @media (prefers-reduced-motion: reduce){
   * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 </style>
-
-</head>
+</link></meta><style>
+/* Auto-injected: toggle date visibility via URL param */
+.work-date{display:none;}
+.show-dates .work-date{display:inline;}
+</style></head>
 <body class="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900">
-  <header class="sticky top-0 z-30 backdrop-blur bg-white/80 border-b border-slate-200/60">
-    <div class="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-      <img decoding="async" loading="lazy" src="logo1.png" alt="logo1" class="h-16 w-16 rounded-xl object-contain">
-      <div class="leading-tight">
-        <div class="font-semibold">自然大叔 Natural Uncle</div>
-        <div class="text-[12px] text-slate-500">清洗前後拼貼照片分享</div>
-      </div>
-      
-    </div>
-  </header>
-
-  <main class="max-w-3xl mx-auto px-4 py-6">
-    <section id="editor" class="card p-5">
-      <h1 class="text-xl font-bold mb-4">建立分享</h1>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div><label class="block text-sm mb-1 text-slate-600">案件/地點</label><input id="title" class="input" placeholder="例如：台北王小姐" /></div>
-        <div><label class="block text-sm mb-1 text-slate-600">服務日期</label><input id="date" type="date" class="input" /></div>
-      </div>
-
-      <div class="mt-4">
-        <label class="block text-sm mb-2 text-slate-600">照片清單（可拖曳排序）</label>
-        <div id="items" class="space-y-3"></div>
-        <div class="flex flex-wrap gap-2 mt-2">
-          <button id="addItem" class="btn btn-ghost tap">＋ 新增一張</button>
-          <label class="btn btn-ghost tap cursor-pointer">
+<header class="sticky top-0 z-30 backdrop-blur bg-white/80 border-b border-slate-200/60">
+<div class="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+<img alt="logo1" class="h-16 w-16 rounded-xl object-contain" decoding="async" loading="lazy" src="logo1.png"/>
+<div class="leading-tight">
+<div class="font-semibold">自然大叔 Natural Uncle</div>
+<div class="text-[12px] text-slate-500">清洗前後拼貼照片分享</div>
+</div>
+</div>
+</header>
+<main class="max-w-3xl mx-auto px-4 py-6">
+<section class="card p-5" id="editor">
+<h1 class="text-xl font-bold mb-4">建立分享</h1>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div><label class="block text-sm mb-1 text-slate-600">案件/地點</label><input class="input" id="title" placeholder="例如：台北王小姐"/></div>
+<div><label class="block text-sm mb-1 text-slate-600">服務日期</label><input class="input" id="date" type="date"/></div>
+</div>
+<div class="mt-4">
+<label class="block text-sm mb-2 text-slate-600">照片清單（可拖曳排序）</label>
+<div class="space-y-3" id="items"></div>
+<div class="flex flex-wrap gap-2 mt-2">
+<button class="btn btn-ghost tap" id="addItem">＋ 新增一張</button>
+<label class="btn btn-ghost tap cursor-pointer">
             相簿選取多張
-            <input id="multiPick" type="file" accept="image/*" multiple class="hidden" />
-          </label>
-        </div>
-        <p class="text-xs text-slate-500 mt-2">支援 JPG/PNG，單檔 ≤ 10MB。拖曳左側「⋮⋮」手把調整順序。</p>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        <div><label class="block text-sm mb-1 text-slate-600">標籤（選填）</label><input id="tags" class="input" placeholder="以逗號分隔，例如：冷氣, 住家" /></div>
-        <div><label class="block text-sm mb-1 text-slate-600">自訂網址代稱（選填）</label><input id="slug" class="input" placeholder="例如：wang-2025-09" /></div>
-      </div>
-
-      <div class="mt-5 flex items-center gap-3">
-        <button id="upload" class="btn btn-primary tap">上傳全部並產生連結</button>
-        <div class="grow progress"><div id="bar" class="bar"></div></div>
-        <span id="progress" class="text-sm text-slate-600 min-w-[5rem]"></span>
-      </div>
-    </section>
-
-    <section id="viewer" class="hidden">
-      <article class="card overflow-hidden">
-        <div class="p-5 border-b border-slate-200/60">
-          <div class="flex items-start gap-3">
-            <div class="grow">
-              <h2 id="v-title" class="text-xl md:text-2xl font-semibold"></h2>
-              <p class="text-sm text-slate-600 mt-1"><span id="v-date"></span></p>
-              <div id="v-tags" class="flex flex-wrap gap-2 mt-2"></div>
-            </div>
-            <a id="downloadZip" class="btn btn-ghost tap" target="_blank" rel="noopener">下載全部（ZIP）</a>
-          </div>
-        </div>
-        <div id="gallery" class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4"></div>
-
-        <div id="share-link" class="hidden px-5 pb-4">
-          <div class="card p-4 flex flex-col md:flex-row md:items-center gap-3">
-            <input id="share-url" class="input md:flex-1" readonly />
-            <button id="copy-link" class="btn btn-primary tap md:w-auto w-full">複製連結</button>
-          </div>
-        </div>
-
-        <div class="p-5 border-t border-slate-200/60 text-center">
-          <img decoding="async" src="logo.png" alt="公司Logo" class="mx-auto mb-3 max-h-16" loading="lazy"/>
-          <p class="text-sm font-semibold">自然大叔 Natural Uncle 專業清淨職人</p>
-          <p class="text-sm mt-1">聯絡電話：<a href="tel:0912356331" class="text-blue-600">0912-356-331</a></p>
-        </div>
-      </article>
-    </section>
-  </main>
-
-  <!-- Lightbox with bottom controls -->
-  <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="圖片放大檢視">
-    <button class="close" aria-label="關閉">✕</button>
-    <div class="content text-center">
-      <img decoding="async" loading="lazy" id="lb-img" alt="放大圖片" />
-      <div id="lb-cap" class="caption"></div>
-    </div>
-    <div class="lb-controls">
-      <button class="navBtn navPrev" aria-label="上一張">❮</button>
-      <button class="navBtn navNext" aria-label="下一張">❯</button>
-    </div>
-  </div>
-
-  <script>
+            <input accept="image/*" class="hidden" id="multiPick" multiple="" type="file"/>
+</label>
+</div>
+<p class="text-xs text-slate-500 mt-2">支援 JPG/PNG，單檔 ≤ 10MB。拖曳左側「⋮⋮」手把調整順序。</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+<div><label class="block text-sm mb-1 text-slate-600">標籤（選填）</label><input class="input" id="tags" placeholder="以逗號分隔，例如：冷氣, 住家"/></div>
+<div><label class="block text-sm mb-1 text-slate-600">自訂網址代稱（選填）</label><input class="input" id="slug" placeholder="例如：wang-2025-09"/></div>
+</div>
+<div class="mt-5 flex items-center gap-3">
+<button class="btn btn-primary tap" id="upload">上傳全部並產生連結</button>
+<div class="grow progress"><div class="bar" id="bar"></div></div>
+<span class="text-sm text-slate-600 min-w-[5rem]" id="progress"></span>
+</div>
+</section>
+<section class="hidden" id="viewer">
+<article class="card overflow-hidden">
+<div class="p-5 border-b border-slate-200/60">
+<div class="flex items-start gap-3">
+<div class="grow">
+<h2 class="text-xl md:text-2xl font-semibold" id="v-title"></h2>
+<p class="text-sm text-slate-600 mt-1"><span id="v-date"></span></p>
+<div class="flex flex-wrap gap-2 mt-2" id="v-tags"></div>
+</div>
+<a class="btn btn-ghost tap" id="downloadZip" rel="noopener" target="_blank">下載全部（ZIP）</a>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4" id="gallery"></div>
+<div class="hidden px-5 pb-4" id="share-link">
+<div class="card p-4 flex flex-col md:flex-row md:items-center gap-3">
+<input class="input md:flex-1" id="share-url" readonly=""/>
+<button class="btn btn-primary tap md:w-auto w-full" id="copy-link">複製連結</button>
+</div>
+</div>
+<div class="p-5 border-t border-slate-200/60 text-center">
+<img alt="公司Logo" class="mx-auto mb-3 max-h-16" decoding="async" loading="lazy" src="logo.png">
+<p class="text-sm font-semibold">自然大叔 Natural Uncle 專業清淨職人</p>
+<p class="text-sm mt-1">聯絡電話：<a class="text-blue-600" href="tel:0912356331">0912-356-331</a></p>
+</img></div>
+</article>
+</section>
+</main>
+<!-- Lightbox with bottom controls -->
+<div aria-label="圖片放大檢視" aria-modal="true" class="lightbox" id="lightbox" role="dialog">
+<button aria-label="關閉" class="close">✕</button>
+<div class="content text-center">
+<img alt="放大圖片" decoding="async" id="lb-img" loading="lazy"/>
+<div class="caption" id="lb-cap"></div>
+</div>
+<div class="lb-controls">
+<button aria-label="上一張" class="navBtn navPrev">❮</button>
+<button aria-label="下一張" class="navBtn navNext">❯</button>
+</div>
+</div>
+<script>
   document.addEventListener('DOMContentLoaded', () => {
     const CLOUD_NAME="dvz4druzc";
     const UPLOAD_PRESET="uncle-collage";
@@ -448,5 +440,15 @@ async function loadPost(slug){
     window.addEventListener('hashchange', route, { passive: true }); route();
   });
   </script>
-</body>
+<script>
+/* Auto-injected: add .show-dates on ?showDates=1 */
+(function(){
+  try{
+    var params = new URLSearchParams(location.search);
+    if (params.get('showDates') === '1') {
+      document.body && document.body.classList.add('show-dates');
+    }
+  }catch(e){}
+})();
+</script></body>
 </html>
