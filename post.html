@@ -50,6 +50,9 @@
 /* Also hide generic <time> with datetime if not explicitly opted-in */
 time[datetime].work-date{display:none !important;}
 .show-dates time[datetime].work-date{display:inline !important;}
+</style><style>
+/* Auto-injected v4: hide post slug codes like "/702710" */
+.post-code, .slug, .code-number { display: none !important; }
 </style></head>
 <body>
 <header>
@@ -339,5 +342,50 @@ load();
     });
     mo.observe(document.documentElement, {childList:true, subtree:true});
   }catch(e){}
+})();
+
+/* Hash-based share page support: show dates on "#/v/<id>" */
+function checkHashForShare(){
+  try{
+    var h = location.hash || '';
+    if (/^#\/v\/\d+/.test(h)) {
+      document.body && document.body.classList.add('show-dates');
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+checkHashForShare();
+window.addEventListener('hashchange', checkHashForShare, false);
+</script><script>
+/* Auto-injected v4: detect and hide slug codes like "/123456" */
+(function(){
+  function hideSlugCode(){
+    try{
+      var re = /^\s*\/\d+\/?\s*$/; // matches "/123456" or "/123456/"
+      var candidates = document.querySelectorAll('header *:not(script):not(style), h1, h2, h3, .topbar *, .navbar *, .title, .subtitle, div, span, a');
+      candidates.forEach(function(el){
+        // Ignore if already hidden or not element
+        if (!el || !el.textContent) return;
+        var txt = (el.textContent || '').trim();
+        if (re.test(txt)) {
+          if (!el.classList.contains('post-code')) el.classList.add('post-code');
+          el.style.display = 'none';
+        }
+        // Also handle elements that store slug in attributes
+        var ds = el.getAttribute && (el.getAttribute('data-slug') || el.getAttribute('data-id'));
+        if (ds && /^\d+$/.test(ds)) {
+          if (!el.classList.contains('post-code')) el.classList.add('post-code');
+          el.style.display = 'none';
+        }
+      });
+    }catch(e){}
+  }
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', hideSlugCode);
+  } else {
+    hideSlugCode();
+  }
+  try{ window.addEventListener('hashchange', hideSlugCode, false);}catch(e){}
 })();</script></body>
 </html>
