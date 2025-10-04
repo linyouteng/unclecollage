@@ -7,7 +7,7 @@
 <meta content="#0f172a" name="theme-color"/>
 <title>清洗前後拼貼照片分享</title>
 <link href="logo.png" rel="icon" type="image/png"/>
-<meta content="上傳清洗前後拼貼照片，加入說明、拖曳排序，並一鍵產生分享連結與 ZIP 下載。" name="description"/>
+<meta content="上傳清洗前後拼貼照片，加入說明、拖曳排序，並一鍵產生分享連結與 ZIP 下載。" name="description">
 <!-- ✅ 新增 favicon -->
 <link href="https://res.cloudinary.com/dijzndzw2/image/upload/c_scale,w_180/v1757176751/logo-3_hddq08.png" rel="apple-touch-icon" sizes="180x180"/>
 <link href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png" rel="shortcut icon"/>
@@ -43,7 +43,7 @@
   * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 </style>
-<style>
+</meta><style>
 /* Auto-injected: toggle date visibility via URL param */
 .work-date{display:none;}
 .show-dates .work-date{display:inline;}
@@ -54,9 +54,6 @@
 /* Also hide generic <time> with datetime if not explicitly opted-in */
 time[datetime].work-date{display:none !important;}
 .show-dates time[datetime].work-date{display:inline !important;}
-</style><style>
-/* Auto-injected v4: hide post slug codes like "/702710" */
-.post-code, .slug, .code-number { display: none !important; }
 </style></head>
 <body class="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900">
 <header class="sticky top-0 z-30 backdrop-blur bg-white/80 border-b border-slate-200/60">
@@ -577,35 +574,5 @@ function checkHashForShare(){
 }
 checkHashForShare();
 window.addEventListener('hashchange', checkHashForShare, false);
-</script><script>
-/* Auto-injected v4: detect and hide slug codes like "/123456" */
-(function(){
-  function hideSlugCode(){
-    try{
-      var re = /^\s*\/\d+\/?\s*$/; // matches "/123456" or "/123456/"
-      var candidates = document.querySelectorAll('header *:not(script):not(style), h1, h2, h3, .topbar *, .navbar *, .title, .subtitle, div, span, a');
-      candidates.forEach(function(el){
-        // Ignore if already hidden or not element
-        if (!el || !el.textContent) return;
-        var txt = (el.textContent || '').trim();
-        if (re.test(txt)) {
-          if (!el.classList.contains('post-code')) el.classList.add('post-code');
-          el.style.display = 'none';
-        }
-        // Also handle elements that store slug in attributes
-        var ds = el.getAttribute && (el.getAttribute('data-slug') || el.getAttribute('data-id'));
-        if (ds && /^\d+$/.test(ds)) {
-          if (!el.classList.contains('post-code')) el.classList.add('post-code');
-          el.style.display = 'none';
-        }
-      });
-    }catch(e){}
-  }
-  if (document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', hideSlugCode);
-  } else {
-    hideSlugCode();
-  }
-  try{ window.addEventListener('hashchange', hideSlugCode, false);}catch(e){}
-})();</script></body>
+</script></body>
 </html>
