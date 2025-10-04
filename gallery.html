@@ -11,7 +11,7 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
 <!-- 新增 favicon -->
-<link href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png" rel="icon" type="image/png">
+<link href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png" rel="icon" type="image/png"/>
 <style id="cols-override">
   /* 固定 3 欄，上下各 3 ；小尺寸降為 2/1 欄 */
   #list.grid { display:grid; grid-template-columns: repeat(3, 1fr) !important; gap: var(--gap, 12px); }
@@ -19,7 +19,7 @@
   @media (max-width: 900px){ #list.grid { grid-template-columns: repeat(2, 1fr) !important; } }
   @media (max-width: 600px){ #list.grid { grid-template-columns: 1fr !important; } }
 </style>
-<link href="assets/styles.css" rel="stylesheet"/>
+<link href="assets/styles.css" rel="stylesheet">
 <style id="logo-fix">
   /* 限制頁首 LOGO 尺寸 */
   header .logo img { height: 40px !important; width: auto !important; max-height: 40px !important; object-fit: contain !important; }
@@ -29,6 +29,13 @@
 /* Auto-injected: toggle date visibility via URL param */
 .work-date{display:none;}
 .show-dates .work-date{display:inline;}
+</style><style>
+/* Auto-injected v2: robust toggle for date visibility */
+.work-date{display:none !important;}
+.show-dates .work-date{display:inline !important;}
+/* Also hide generic <time> with datetime if not explicitly opted-in */
+time[datetime].work-date{display:none !important;}
+.show-dates time[datetime].work-date{display:inline !important;}
 </style></head>
 <body>
 <header>
@@ -159,5 +166,107 @@
     }
   }catch(e){}
 })();
-</script></body>
+</script><script>
+/* Auto-injected v2: robust date toggling and runtime classification */
+(function(){
+  try{
+    var params = new URLSearchParams(location.search);
+    if (params.get('showDates') === '1') {
+      document.body && document.body.classList.add('show-dates');
+    }
+  }catch(e){}
+
+  function isTextNode(n){ return n && n.nodeType === Node.TEXT_NODE; }
+
+  var dateRe = /\b(20\d{2}|19\d{2})([-\/.])(0?[1-9]|1[0-2])\2(0?[1-9]|[12]\d|3[01])\b/;
+
+  function shouldSkip(el){
+    if(!el) return true;
+    var name = (el.nodeName||'').toLowerCase();
+    if (['script','style','noscript','code','pre'].indexOf(name) >= 0) return true;
+    return false;
+  }
+
+  function wrapTextNode(node){
+    var text = node.nodeValue;
+    var m = dateRe.exec(text);
+    if(!m) return false;
+    var y=m[1], sep=m[2], mm=m[3], dd=m[4];
+    var start = m.index;
+    var end = start + m[0].length;
+    var before = text.slice(0, start);
+    var match = text.slice(start, end);
+    var after = text.slice(end);
+
+    var span = document.createElement('time');
+    span.className = 'work-date';
+    var to2 = function(n){ n = parseInt(n,10); return (n<10?'0':'')+n; };
+    span.setAttribute('datetime', y+'-'+to2(mm)+'-'+to2(dd));
+    span.textContent = match;
+
+    var frag = document.createDocumentFragment();
+    if(before) frag.appendChild(document.createTextNode(before));
+    frag.appendChild(span);
+    if(after) frag.appendChild(document.createTextNode(after));
+
+    node.parentNode.replaceChild(frag, node);
+    return true;
+  }
+
+  function markKnownDateElems(){
+    var selectors = ['.date', '.post-date', '.work .date', '[data-date]', '[itemprop="datePublished"]', 'time[datetime]'];
+    try {
+      document.querySelectorAll(selectors.join(',')).forEach(function(el){
+        if(!el.classList.contains('work-date')) el.classList.add('work-date');
+      });
+    } catch(e){}
+  }
+
+  function scanAndWrap(root){
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: function(node){
+        var p = node.parentNode;
+        if(!p || shouldSkip(p)) return NodeFilter.FILTER_REJECT;
+        if((p.closest && p.closest('.work-date')) || (p.nodeName||'').toLowerCase() === 'time') return NodeFilter.FILTER_REJECT;
+        return dateRe.test(node.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    var nodes = [];
+    var n;
+    while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(wrapTextNode);
+  }
+
+  function init(){
+    if(document.body && !document.body.classList.contains('show-dates')){
+      // hide scenario
+      markKnownDateElems();
+      scanAndWrap(document.body);
+    }
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  // Also observe dynamic inserts
+  try{
+    var mo = new MutationObserver(function(muts){
+      if(!document.body || document.body.classList.contains('show-dates')) return;
+      muts.forEach(function(m){
+        m.addedNodes && m.addedNodes.forEach(function(node){
+          if(node.nodeType === 1){ // element
+            markKnownDateElems();
+            scanAndWrap(node);
+          } else if(node.nodeType === 3){ // text
+            wrapTextNode(node);
+          }
+        });
+      });
+    });
+    mo.observe(document.documentElement, {childList:true, subtree:true});
+  }catch(e){}
+})();</script></body>
 </html>
