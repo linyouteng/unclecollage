@@ -331,9 +331,19 @@ time[datetime].work-date{display:none !important;}
         }
 
         setProgress('儲存資料…');
+        const adminToken = localStorage.getItem('adminToken') || '';
+        if (!adminToken) {
+           alert('請先登入管理員（到作品清單頁登入後再回來即可）');
+           return;
+        }
+
         const resp = await fetch('/.netlify/functions/create-post',{
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ title, date, tags, slug, items })
+           method:'POST',
+           headers:{
+              'Content-Type':'application/json',
+              'Authorization':'Bearer ' + adminToken
+           },
+           body: JSON.stringify({ title, date, tags, slug, items })
         });
         const txt = await resp.text();
         let data; try{ data = JSON.parse(txt); }catch{ data = { error: txt }; }

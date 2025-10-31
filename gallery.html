@@ -1,285 +1,726 @@
 <!DOCTYPE html>
-
 <html lang="zh-Hant">
 <head>
-<meta content="#0f172a" name="theme-color"/>
-<meta charset="utf-8"/>
-<title>自然大叔｜作品清單</title>
-<link href="logo.png" rel="icon" type="image/png"/>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
-<!-- 新增 favicon -->
-<link href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png" rel="icon" type="image/png"/>
-<style id="cols-override">
-  /* 固定 3 欄，上下各 3 ；小尺寸降為 2/1 欄 */
-  #list.grid { display:grid; grid-template-columns: repeat(3, 1fr) !important; gap: var(--gap, 12px); }
-  #list.grid > .card { grid-column: auto !important; }
-  @media (max-width: 900px){ #list.grid { grid-template-columns: repeat(2, 1fr) !important; } }
-  @media (max-width: 600px){ #list.grid { grid-template-columns: 1fr !important; } }
-</style>
-<link href="assets/styles.css" rel="stylesheet"/>
-<style id="logo-fix">
-  /* 限制頁首 LOGO 尺寸 */
-  header .logo img { height: 40px !important; width: auto !important; max-height: 40px !important; object-fit: contain !important; }
-</style>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-/* Auto-injected: toggle date visibility via URL param */
-.work-date{display:none;}
-.show-dates .work-date{display:inline;}
-</style><style>
-/* Auto-injected v2: robust toggle for date visibility */
-.work-date{display:none !important;}
-.show-dates .work-date{display:inline !important;}
-/* Also hide generic <time> with datetime if not explicitly opted-in */
-time[datetime].work-date{display:none !important;}
-.show-dates time[datetime].work-date{display:inline !important;}
-</style></head>
+  <!-- favicon -->
+  <link href="https://res.cloudinary.com/dijzndzw2/image/upload/c_scale,w_180/v1757176751/logo-3_hddq08.png" rel="apple-touch-icon" sizes="180x180"/>
+  <link href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png" rel="shortcut icon"/>
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>自然大叔｜作品清單</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet"/>
+
+  <style>
+    :root{
+      --max-w:1120px;
+      --fg:#0d0d0d;
+      --muted:#666;
+      --bg:#fff;
+      --brand:#111827;
+      --card:#fff;
+      --border:#e5e7eb;
+      --radius:14px;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--fg);
+      font-family: system-ui,-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",Arial,Helvetica,sans-serif;
+      -webkit-font-smoothing:antialiased;
+    }
+    .container{
+      max-width:var(--max-w);
+      margin:0 auto;
+      padding:0 16px;
+    }
+    header{
+      background:var(--bg);
+      border-bottom:1px solid var(--border);
+      position:sticky;
+      top:0;
+      z-index:10;
+    }
+    .navrow{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:flex-start;
+      gap:12px;
+      padding:12px 0;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:700;
+      font-size:14px;
+      line-height:1.2;
+      color:var(--fg);
+      white-space:nowrap;
+    }
+    .brand img{
+      width:32px;
+      height:32px;
+      object-fit:contain;
+      border-radius:8px;
+      border:1px solid var(--border);
+      background:#fff;
+    }
+    form#filters{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:8px;
+      font-size:14px;
+      flex:1;
+      min-width:200px;
+    }
+    #filters input[type="search"]{
+      min-width:160px;
+      padding:6px 10px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      font-size:14px;
+    }
+    #filters select{
+      padding:6px 10px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:#fff;
+      font-size:14px;
+    }
+    #filters button[type="submit"],
+    #filters button[type="button"]{
+      padding:6px 10px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:var(--brand);
+      color:#fff;
+      cursor:pointer;
+      font-size:14px;
+      line-height:1.2;
+    }
+
+    .admin-panel{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:8px;
+      margin-left:auto;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .admin-panel input[type="password"]{
+      padding:4px 8px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      font-size:12px;
+    }
+    .admin-btn{
+      padding:4px 8px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:#fff;
+      font-size:12px;
+      line-height:1.2;
+      cursor:pointer;
+    }
+    .admin-row{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:8px;
+    }
+    .hidden{display:none !important;}
+
+    main.container{
+      padding:16px 0 64px;
+    }
+    h1{
+      margin:0 0 4px;
+      font-size:20px;
+      line-height:1.3;
+      font-weight:700;
+      color:var(--fg);
+      display:inline-block;
+    }
+    #count{
+      font-size:14px;
+      color:var(--muted);
+      margin-left:8px;
+    }
+
+    #list{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));
+      gap:16px;
+      margin-top:20px;
+    }
+
+    /* 卡片外觀：目前版是有 padding 的版本。
+       你如果有另外一份 styles.css 控制卡片貼邊，那邊也可以沿用。
+       這裡保留 padding:12px，不影響這次日期顯示的回復邏輯 */
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      min-height:220px;
+    }
+
+    /* 預覽縮圖 */
+    .thumb-link{
+      position:relative;
+      width:100%;
+      min-height:240px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:10px;
+      overflow:hidden;
+      background:#f3f4f6;
+      border:1px solid var(--border);
+      margin-bottom:10px;
+    }
+    .thumb-img{
+      width:100%;
+      height:100%;
+      background-size:contain;
+      background-repeat:no-repeat;
+      background-position:center center;
+    }
+
+    /* 卡片 header（標題＋原本日期）
+       這裡我們把排版改成靠左，因為現在不會再把日期塞到右邊了 */
+    .card-head{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:flex-start;
+      justify-content:flex-start;
+      gap:4px 8px;
+      margin-bottom:4px;
+    }
+
+    .title-link{
+      font-size:15px;
+      font-weight:600;
+      color:var(--fg);
+      text-decoration:none;
+      line-height:1.3;
+      word-break:break-word;
+    }
+
+    /* 日期文字 class 還是保留，但之後不會 append 到卡片 */
+    .date{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    .tags{
+      font-size:12px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:4px;
+    }
+    .tag{
+      display:inline-block;
+      padding:2px 6px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      background:#fafafa;
+      color:#333;
+      font-size:12px;
+      line-height:1.2;
+      white-space:nowrap;
+      max-width:100%;
+      text-overflow:ellipsis;
+      overflow:hidden;
+    }
+
+    .admin-controls{
+      margin-top:10px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      font-size:12px;
+    }
+    .admin-controls button{
+      border:1px solid var(--border);
+      background:#fff;
+      border-radius:8px;
+      font-size:12px;
+      line-height:1.2;
+      padding:4px 8px;
+      cursor:pointer;
+    }
+    .admin-controls button.danger{
+      color:#fff;
+      background:#dc2626;
+      border-color:#dc2626;
+    }
+
+    #pager{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+      margin-top:24px;
+      font-size:14px;
+      color:var(--fg);
+    }
+    #pager button{
+      padding:6px 10px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:#fff;
+      font-size:14px;
+      cursor:pointer;
+    }
+    #pager button[disabled]{
+      opacity:0.4;
+      cursor:not-allowed;
+    }
+    .empty{
+      text-align:center;
+      padding:40px 0;
+      color:var(--muted);
+      font-size:14px;
+    }
+    @media(max-width:600px){
+      .navrow{
+        flex-direction:column;
+        align-items:stretch;
+      }
+      .admin-panel{
+        margin-left:0;
+        width:100%;
+        justify-content:flex-start;
+      }
+    }
+  </style>
+</head>
 <body>
 <header>
-<meta content="#0f172a" name="theme-color"/>
-<div class="container nav">
-<div class="logo" href="./">
-<img alt="logo" src="logo.png"/>
-</div>
-<form class="searchbar" id="filters" onsubmit="event.preventDefault(); load()">
-<input id="q" placeholder="搜尋標題或標籤…" type="search"/><button aria-label="搜尋" id="searchBtn" style="margin-left:8px; padding:6px 10px; border-radius:8px; border:1px solid #cbd5e1; background:#fff; cursor:pointer;" title="搜尋" type="button">🔍</button>
-<select id="sort">
-<option value="date_desc">最新優先</option>
-<option value="date_asc">最舊優先</option>
-</select>
-<button type="submit">套用</button>
-</form>
-</div>
+  <div class="container">
+    <div class="navrow">
+      <div class="brand">
+        <img src="logo1.png" alt="logo1"/>
+        <div>自然大叔｜作品清單</div>
+      </div>
+
+      <form id="filters" onsubmit="event.preventDefault(); load();">
+        <input id="q" type="search" placeholder="搜尋標題或標籤…" />
+        <select id="sort">
+          <option value="date_desc">最新優先</option>
+          <option value="date_asc">最舊優先</option>
+          <option value="title_asc">標題A→Z</option>
+          <option value="title_desc">標題Z→A</option>
+        </select>
+        <button type="submit">套用</button>
+      </form>
+
+      <div class="admin-panel">
+        <div id="admin-logged-out" class="admin-row">
+          <input type="password" id="admin-pass" placeholder="管理密碼" />
+          <button type="button" class="admin-btn" id="admin-login-btn">登入</button>
+        </div>
+
+        <div id="admin-logged-in" class="admin-row hidden">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--fg);">
+            <input type="checkbox" id="showHiddenToggle"/>
+            <span>顯示隱藏作品</span>
+          </label>
+          <button type="button" class="admin-btn" id="admin-logout-btn">登出</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </header>
+
 <main class="container">
-<h1>作品清單</h1> <span class="muted" id="count"></span>
-<div aria-live="polite" class="grid" id="list"></div>
-<div class="pager" hidden="" id="pager">
-<button id="prev">上一頁</button>
-<span class="muted" id="pageInfo"></span>
-<button id="next">下一頁</button>
-</div>
-<div class="empty" hidden="" id="empty">目前尚無作品</div>
+  <h1>作品清單</h1><span id="count"></span>
+
+  <div id="list" aria-live="polite"></div>
+
+  <div id="empty" class="empty" hidden>目前沒有作品</div>
+
+  <div id="pager" hidden>
+    <button id="prev">‹ 上一頁</button>
+    <span id="pageInfo">1 / 1</span>
+    <button id="next">下一頁 ›</button>
+  </div>
 </main>
-<template id="card-tpl">
-<article class="card">
-<a aria-label="開啟作品" class="thumb" rel="noopener" target="_blank"></a>
-<div class="meta">
-<div class="row">
-<a class="title" rel="noopener" target="_blank"></a>
-<span class="muted date"></span>
-</div>
-<div class="tags"></div>
-</div>
-</article>
-</template>
-<script>
-    const PAGE_SIZE = 6;
-    let currentPage = 1;
-    let lastData = [];
-    async function fetchList() {
-      const url = new URL(location.origin + '/.netlify/functions/list-posts');
-      const r = await fetch(url);
-      if (!r.ok) throw new Error('載入作品清單失敗');
-      const json = await r.json();
-      return Array.isArray(json.items) ? json.items : [];
-    }
-    function applyFilters(items){
-  const q = document.querySelector('#q').value.trim().toLowerCase();
-  const sort = document.querySelector('#sort').value;
-  let out = items;
 
-  if (q) {
-    out = out.filter(x => {
-      const title = String(x.title || '').toLowerCase();
-      const slug = String(x.slug || '').toLowerCase();
-      const rawTags = (x.tags == null) ? [] :
-                      (Array.isArray(x.tags) ? x.tags :
-                        (typeof x.tags === 'string' ? x.tags.split(/[,，\s]+/) : []));
-      const tags = rawTags.filter(Boolean).map(t => String(t).toLowerCase());
-      return title.includes(q) || slug.includes(q) || tags.some(t => t.includes(q));
-    });
+<script>
+(function(){
+  const PAGE_SIZE = 6;
+  const TOKEN_KEY = 'adminToken';
+
+  let allItems = [];
+  let currentPage = 1;
+
+  // ===== Auth helpers =====
+  function getToken(){
+    try { return localStorage.getItem(TOKEN_KEY) || ''; } catch(_) { return ''; }
+  }
+  function setToken(t){
+    try { if (t){ localStorage.setItem(TOKEN_KEY,t); } } catch(_){}
+  }
+  function clearToken(){
+    try { localStorage.removeItem(TOKEN_KEY); } catch(_){}
+  }
+  function isLoggedIn(){
+    return !!getToken();
   }
 
-  out = out.slice();
-  out.sort((a,b)=>{
-    if (sort === 'date_desc') return new Date(b.date || b.created_at || 0) - new Date(a.date || a.created_at || 0);
-    if (sort === 'date_asc') return new Date(a.date || a.created_at || 0) - new Date(b.date || b.created_at || 0);
-    if (sort === 'title_asc') return String(a.title||'').localeCompare(String(b.title||''));
-    if (sort === 'title_desc') return String(b.title||'').localeCompare(String(a.title||''));
-    return 0;
-  });
-  return out;
-}
-    function render(items){ try{ document.getElementById('count').textContent = `共 ${items.length} 筆作品`; }catch(_){} 
-      const list = document.querySelector('#list');
-      const empty = document.querySelector('#empty');
-      const pager = document.querySelector('#pager');
-      list.innerHTML = '';
-      if (!items.length){ empty.hidden = false; pager.hidden = true; return; } else { empty.hidden = true; }
-      const start = (currentPage-1) * PAGE_SIZE;
-      const pageItems = items.slice(start, start + PAGE_SIZE);
-      const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-      for (const it of pageItems){
-        const tpl = document.querySelector('#card-tpl').content.cloneNode(true);
-        const detailUrl = `post.html?slug=${encodeURIComponent(it.slug)}`;
-        const viewUrl = it.preview || it.cover || it.items?.[0]?.url || '#';
-        tpl.querySelector('.thumb').href = detailUrl;
-        tpl.querySelector('.thumb').style.backgroundImage = viewUrl ? `url("${viewUrl}")` : '';
-        tpl.querySelector('.thumb').style.backgroundSize = 'cover';
-        tpl.querySelector('.thumb').style.backgroundPosition = 'center';
-        const title = it.title || it.slug || '未命名';
-        tpl.querySelector('.title').textContent = title;
-        tpl.querySelector('.title').href = detailUrl;
-        const dateStr = new Date(it.date || it.created_at || Date.now()).toLocaleDateString('zh-TW');
-        tpl.querySelector('.date').textContent = dateStr;
-        const tagsWrap = tpl.querySelector('.tags');
-        if (tagsWrap){
-          const tags = Array.isArray(it.tags) ? it.tags : (typeof it.tags === 'string' ? it.tags.split(/[,，\s]+/).filter(Boolean) : []);
-          tags.forEach(t=>{ const span=document.createElement('span'); span.className='tag'; span.textContent=t; tagsWrap.appendChild(span); });
-        }
-        list.appendChild(tpl);
-      }
-      pager.hidden = totalPages <= 1;
-      document.querySelector('#pageInfo').textContent = `${currentPage} / ${totalPages}`;
-      document.querySelector('#prev').disabled = currentPage <= 1;
-      document.querySelector('#next').disabled = currentPage >= totalPages;
-      document.querySelector('#prev').onclick = () => { if(currentPage>1){ currentPage--; render(applyFilters(lastData)); } };
-      document.querySelector('#next').onclick = () => { if(currentPage<totalPages){ currentPage++; render(applyFilters(lastData)); } };
+  function refreshAdminUI(){
+    const loggedOut = document.getElementById('admin-logged-out');
+    const loggedIn  = document.getElementById('admin-logged-in');
+    if (isLoggedIn()){
+      loggedOut.classList.add('hidden');
+      loggedIn.classList.remove('hidden');
+    }else{
+      loggedIn.classList.add('hidden');
+      loggedOut.classList.remove('hidden');
+      const toggle = document.getElementById('showHiddenToggle');
+      if (toggle) toggle.checked = false;
     }
-    async function load(){ try{ if (!lastData.length){ lastData = await fetchList(); } const filtered = applyFilters(lastData); currentPage = 1; render(filtered);}catch(e){ document.querySelector('#list').innerHTML = `<div class=\"empty\">${e.message||e}</div>`; } }
-    const btn=document.getElementById('searchBtn'); if(btn){ btn.addEventListener('click', ()=>{ load(); }); }
+  }
+
+  async function adminLogin(){
+    const pwInput = document.getElementById('admin-pass');
+    const password = pwInput.value.trim();
+    if (!password){
+      alert('請輸入管理密碼');
+      return;
+    }
+
+    const r = await fetch('/.netlify/functions/admin-login', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ password })
+    });
+    const data = await r.json().catch(()=>({}));
+    if(!r.ok || !data.token){
+      alert(data.error || '登入失敗');
+      return;
+    }
+    setToken(data.token);
+    pwInput.value = '';
+    refreshAdminUI();
+    await load();
+  }
+
+  function adminLogout(){
+    clearToken();
+    refreshAdminUI();
     load();
-  </script>
-<script>
-/* Auto-injected: add .show-dates on ?showDates=1 */
-(function(){
-  try{
-    var params = new URLSearchParams(location.search);
-    if (params.get('showDates') === '1') {
-      document.body && document.body.classList.add('show-dates');
+  }
+
+  // ===== API calls =====
+
+  async function fetchList(){
+    const token = getToken();
+    const wantHidden = !!(document.getElementById('showHiddenToggle')?.checked);
+
+    const url = new URL('/.netlify/functions/list-posts', location.origin);
+    if (wantHidden && token){
+      url.searchParams.set('showHidden', '1');
     }
-  }catch(e){}
-})();
-</script><script>
-/* Auto-injected v2: robust date toggling and runtime classification */
-(function(){
-  try{
-    var params = new URLSearchParams(location.search);
-    if (params.get('showDates') === '1') {
-      document.body && document.body.classList.add('show-dates');
+
+    const headers = {};
+    if (token){
+      headers['Authorization'] = 'Bearer ' + token;
     }
-  }catch(e){}
 
-  function isTextNode(n){ return n && n.nodeType === Node.TEXT_NODE; }
+    const resp = await fetch(url.toString(), { headers });
+    if(!resp.ok){
+      throw new Error('載入作品清單失敗 (' + resp.status + ')');
+    }
 
-  var dateRe = /\b(20\d{2}|19\d{2})([-\/.])(0?[1-9]|1[0-2])\2(0?[1-9]|[12]\d|3[01])\b/;
-
-  function shouldSkip(el){
-    if(!el) return true;
-    var name = (el.nodeName||'').toLowerCase();
-    if (['script','style','noscript','code','pre'].indexOf(name) >= 0) return true;
-    return false;
+    const json = await resp.json();
+    return Array.isArray(json.items) ? json.items : [];
   }
 
-  function wrapTextNode(node){
-    var text = node.nodeValue;
-    var m = dateRe.exec(text);
-    if(!m) return false;
-    var y=m[1], sep=m[2], mm=m[3], dd=m[4];
-    var start = m.index;
-    var end = start + m[0].length;
-    var before = text.slice(0, start);
-    var match = text.slice(start, end);
-    var after = text.slice(end);
-
-    var span = document.createElement('time');
-    span.className = 'work-date';
-    var to2 = function(n){ n = parseInt(n,10); return (n<10?'0':'')+n; };
-    span.setAttribute('datetime', y+'-'+to2(mm)+'-'+to2(dd));
-    span.textContent = match;
-
-    var frag = document.createDocumentFragment();
-    if(before) frag.appendChild(document.createTextNode(before));
-    frag.appendChild(span);
-    if(after) frag.appendChild(document.createTextNode(after));
-
-    node.parentNode.replaceChild(frag, node);
-    return true;
-  }
-
-  function markKnownDateElems(){
-    var selectors = ['.date', '.post-date', '.work .date', '[data-date]', '[itemprop="datePublished"]', 'time[datetime]'];
-    try {
-      document.querySelectorAll(selectors.join(',')).forEach(function(el){
-        if(!el.classList.contains('work-date')) el.classList.add('work-date');
-      });
-    } catch(e){}
-  }
-
-  function scanAndWrap(root){
-    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode: function(node){
-        var p = node.parentNode;
-        if(!p || shouldSkip(p)) return NodeFilter.FILTER_REJECT;
-        if((p.closest && p.closest('.work-date')) || (p.nodeName||'').toLowerCase() === 'time') return NodeFilter.FILTER_REJECT;
-        return dateRe.test(node.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-      }
+  async function apiToggleVisible(slug, nextVisible){
+    const token = getToken();
+    if (!token){
+      alert('請先登入管理員');
+      return;
+    }
+    const resp = await fetch('/.netlify/functions/update-visible', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer ' + token
+      },
+      body: JSON.stringify({
+        slug,
+        visible: nextVisible
+      })
     });
-    var nodes = [];
-    var n;
-    while((n = walker.nextNode())) nodes.push(n);
-    nodes.forEach(wrapTextNode);
+    const data = await resp.json().catch(()=>({}));
+    if(!resp.ok){
+      alert(data.error || '更新顯示狀態失敗');
+    }
+  }
+
+  async function apiDeletePost(slug){
+    const token = getToken();
+    if (!token){
+      alert('請先登入管理員');
+      return;
+    }
+    const resp = await fetch('/.netlify/functions/delete-post', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer ' + token
+      },
+      body: JSON.stringify({ slug })
+    });
+    const data = await resp.json().catch(()=>({}));
+    if(!resp.ok){
+      alert(data.error || '刪除失敗');
+    }
+  }
+
+  // ===== filter/sort/pagination =====
+
+  function applyFilters(items){
+    const q = document.getElementById('q').value.trim().toLowerCase();
+    const sort = document.getElementById('sort').value;
+
+    let out = items;
+    if (q){
+      out = out.filter(x=>{
+        const title = (x.title || x.slug || '').toLowerCase();
+        const tagsArr = Array.isArray(x.tags)
+          ? x.tags
+          : (typeof x.tags === 'string' ? x.tags.split(/[,，\s]+/).filter(Boolean) : []);
+        const tagsText = tagsArr.join(' ').toLowerCase();
+        return title.includes(q) || tagsText.includes(q);
+      });
+    }
+
+    out = out.slice();
+    out.sort((a,b)=>{
+      if (sort === 'date_desc'){
+        return new Date(b.date || b.created_at || 0) - new Date(a.date || a.created_at || 0);
+      }
+      if (sort === 'date_asc'){
+        return new Date(a.date || a.created_at || 0) - new Date(b.date || b.created_at || 0);
+      }
+      if (sort === 'title_asc'){
+        return String(a.title||'').localeCompare(String(b.title||''));
+      }
+      if (sort === 'title_desc'){
+        return String(b.title||'').localeCompare(String(a.title||''));
+      }
+      return 0;
+    });
+
+    return out;
+  }
+
+  // 切換隱藏 / 顯示
+  async function toggleVisible(slug, currentVisible){
+    const wantHide = currentVisible !== false;
+    const nextVisible = !wantHide;
+    await apiToggleVisible(slug, nextVisible);
+    await load();
+  }
+
+  async function deletePost(slug){
+    const ok = confirm(`確定要永久刪除「${slug}」？\n此動作會刪除所有圖片與資料，且無法復原！`);
+    if(!ok) return;
+    await apiDeletePost(slug);
+    await load();
+  }
+
+  function render(items){
+    document.getElementById('count').textContent = `（共 ${items.length} 筆）`;
+
+    const listEl  = document.getElementById('list');
+    const emptyEl = document.getElementById('empty');
+    const pagerEl = document.getElementById('pager');
+
+    listEl.innerHTML = '';
+
+    if(!items.length){
+      emptyEl.hidden = false;
+      pagerEl.hidden = true;
+      return;
+    } else {
+      emptyEl.hidden = true;
+    }
+
+    const start = (currentPage-1) * PAGE_SIZE;
+    const pageItems = items.slice(start, start+PAGE_SIZE);
+    const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+
+    for(const it of pageItems){
+      const slug = it.slug;
+      const detailUrl = `post.html?slug=${encodeURIComponent(slug)}`;
+      const thumbUrl = it.preview || (Array.isArray(it.items) && it.items[0] ? it.items[0].url : '');
+
+      const card = document.createElement('article');
+      card.className = 'card';
+
+      // 縮圖
+      const thumbLink = document.createElement('a');
+      thumbLink.className = 'thumb-link';
+      thumbLink.href = detailUrl;
+
+      const thumbImg = document.createElement('div');
+      thumbImg.className = 'thumb-img';
+      if (thumbUrl){
+        thumbImg.style.backgroundImage = `url("${thumbUrl}")`;
+      }
+      thumbLink.appendChild(thumbImg);
+      card.appendChild(thumbLink);
+
+      // 卡片標題列（不再顯示日期）
+      const head = document.createElement('div');
+      head.className = 'card-head';
+
+      const titleA = document.createElement('a');
+      titleA.className = 'title-link';
+      titleA.href = detailUrl;
+      titleA.textContent = it.title || it.slug || '未命名';
+
+      head.appendChild(titleA);
+      // ⚠ 日期不再加入列表卡片
+      // const dateSpan = document.createElement('span');
+      // dateSpan.className = 'date';
+      // const d = new Date(it.date || it.created_at || Date.now());
+      // dateSpan.textContent = d.toLocaleDateString('zh-TW');
+      // head.appendChild(dateSpan);
+
+      card.appendChild(head);
+
+      // tags
+      const tagsWrap = document.createElement('div');
+      tagsWrap.className = 'tags';
+      const tagList = Array.isArray(it.tags)
+        ? it.tags
+        : (typeof it.tags === 'string'
+           ? it.tags.split(/[,，\s]+/).filter(Boolean)
+           : []);
+      tagList.forEach(tagText=>{
+        const span = document.createElement('span');
+        span.className = 'tag';
+        span.textContent = tagText;
+        tagsWrap.appendChild(span);
+      });
+      card.appendChild(tagsWrap);
+
+      // 管理員模式下，如果是 hidden，顯示紅字提醒
+      if(isLoggedIn() && it.visible === false){
+        const hiddenNote = document.createElement('div');
+        hiddenNote.style.fontSize = '12px';
+        hiddenNote.style.color = 'crimson';
+        hiddenNote.style.marginTop = '6px';
+        hiddenNote.textContent = '（已隱藏，不在公開清單顯示）';
+        card.appendChild(hiddenNote);
+      }
+
+      // 管理員控制列
+      if(isLoggedIn()){
+        const ctrl = document.createElement('div');
+        ctrl.className = 'admin-controls';
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.textContent = (it.visible === false) ? '取消隱藏' : '隱藏';
+        toggleBtn.addEventListener('click', ()=>{
+          toggleVisible(slug, it.visible);
+        });
+        ctrl.appendChild(toggleBtn);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'danger';
+        delBtn.textContent = '刪除';
+        delBtn.addEventListener('click', ()=>{ deletePost(slug); });
+        ctrl.appendChild(delBtn);
+
+        card.appendChild(ctrl);
+      }
+
+      listEl.appendChild(card);
+    }
+
+    // 分頁 UI
+    const pager = document.getElementById('pager');
+    pager.hidden = (totalPages <= 1);
+    document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
+    document.getElementById('prev').disabled = currentPage <= 1;
+    document.getElementById('next').disabled = currentPage >= totalPages;
+
+    document.getElementById('prev').onclick = ()=>{
+      if(currentPage>1){
+        currentPage--;
+        render(applyFilters(allItems));
+      }
+    };
+    document.getElementById('next').onclick = ()=>{
+      if(currentPage<totalPages){
+        currentPage++;
+        render(applyFilters(allItems));
+      }
+    };
+  }
+
+  // ===== lifecycle =====
+
+  async function load(){
+    try {
+      currentPage = 1;
+      allItems = await fetchList();
+      render(applyFilters(allItems));
+    } catch(e){
+      console.error(e);
+      document.getElementById('list').innerHTML =
+        `<div class="empty">${e.message || e}</div>`;
+      document.getElementById('empty').hidden = true;
+      document.getElementById('pager').hidden = true;
+    }
+  }
+
+  function initEvents(){
+    document.getElementById('filters').addEventListener('submit', ()=>{
+      currentPage = 1;
+      render(applyFilters(allItems));
+    });
+
+    document.getElementById('admin-login-btn')
+      .addEventListener('click', adminLogin);
+
+    document.getElementById('admin-logout-btn')
+      .addEventListener('click', adminLogout);
+
+    document.getElementById('showHiddenToggle')
+      .addEventListener('change', ()=>{ load(); });
   }
 
   function init(){
-    if(document.body && !document.body.classList.contains('show-dates')){
-      // hide scenario
-      markKnownDateElems();
-      scanAndWrap(document.body);
-    }
+    refreshAdminUI();
+    initEvents();
+    load();
   }
 
-  if(document.readyState === 'loading'){
+  if (document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
-
-  // Also observe dynamic inserts
-  try{
-    var mo = new MutationObserver(function(muts){
-      if(!document.body || document.body.classList.contains('show-dates')) return;
-      muts.forEach(function(m){
-        m.addedNodes && m.addedNodes.forEach(function(node){
-          if(node.nodeType === 1){ // element
-            markKnownDateElems();
-            scanAndWrap(node);
-          } else if(node.nodeType === 3){ // text
-            wrapTextNode(node);
-          }
-        });
-      });
-    });
-    mo.observe(document.documentElement, {childList:true, subtree:true});
-  }catch(e){}
 })();
-
-/* Hash-based share page support: show dates on "#/v/<id>" */
-function checkHashForShare(){
-  try{
-    var h = location.hash || '';
-    if (/^#\/v\/\d+/.test(h)) {
-      document.body && document.body.classList.add('show-dates');
-      return true;
-    }
-  }catch(e){}
-  return false;
-}
-checkHashForShare();
-window.addEventListener('hashchange', checkHashForShare, false);
-</script></body>
+</script>
+</body>
 </html>
