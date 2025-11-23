@@ -8,7 +8,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#0f172a" />
-  <title>自然大叔｜作品清單</title>
+  <title>自然大叔｜照片清單</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -367,7 +367,7 @@
     <div class="navrow">
       <div class="brand">
         <img src="logo2.png" alt="logo2"/>
-        <div>自然大叔｜作品清單</div>
+        <div>自然大叔｜照片清單</div>
       </div>
 
       <form id="filters" onsubmit="event.preventDefault(); load();">
@@ -400,7 +400,7 @@
 </header>
 
 <main class="container">
-  <h1>作品清單</h1><span id="count"></span>
+  <h1>照片清單</h1><span id="count"></span>
 
   <div id="list" aria-live="polite"></div>
 
@@ -510,7 +510,7 @@
 
     const resp = await fetch(url.toString(), { headers });
     if(!resp.ok){
-      throw new Error('載入作品清單失敗 (' + resp.status + ')');
+      throw new Error('載入照片清單失敗 (' + resp.status + ')');
     }
 
     const json = await resp.json();
