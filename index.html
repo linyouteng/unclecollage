@@ -4,9 +4,9 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#0f172a"/>
-<title>清洗前後拼貼照片分享</title>
+<title>清洗前後照片分享｜自然大叔</title>
 <link rel="icon" type="image/png" href="logo.png"/>
-<meta name="description" content="上傳清洗前後拼貼照片，加入說明、拖曳排序，並一鍵產生分享連結與 ZIP 下載。">
+<meta name="description" content="將清洗前後的照片整理成拼貼並加入案件說明，分享給客人留存查看，也方便日後比對髒污程度，預估最適合的清洗與保養時間。">
 <!-- ✅ 新增 favicon -->
 <link rel="apple-touch-icon" sizes="180x180" href="https://res.cloudinary.com/dijzndzw2/image/upload/c_scale,w_180/v1757176751/logo-3_hddq08.png"/>
 <link rel="shortcut icon" href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png"/>
@@ -37,6 +37,66 @@
   .lightbox .close { position:absolute; top:16px; right:16px; color:#e2e8f0; font-size:26px; }
   .lb-controls { position:absolute; left:0; right:0; bottom:16px; display:flex; align-items:center; justify-content:center; gap:16px; pointer-events:none; }
   .lb-controls .navBtn { pointer-events:auto; font-size:20px; color:#fff; width:56px; height:56px; display:flex; align-items:center; justify-content:center; border-radius:9999px; background:rgba(17,24,39,.6); border:1px solid rgba(255,255,255,.2); backdrop-filter: blur(6px); }
+
+  .btn-desc-template {
+    font-size:11px;
+    padding:0.25rem 0.6rem;
+    border-radius:9999px;
+    border:1px dashed rgba(148,163,184,.9);
+    background:rgba(248,250,252,.9);
+    color:#475569;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-desc-template:hover {
+    background:#e2e8f0;
+  }
+
+  @media (max-width: 640px){
+    body{
+      font-size:14px;
+    }
+    header > div{
+      align-items:flex-start;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    #admin-panel{
+      margin-left:0;
+      width:100%;
+      justify-content:flex-start;
+      margin-top:4px;
+      gap:6px;
+    }
+    #admin-panel input{
+      width:100%;
+      max-width:160px;
+    }
+    main{
+      padding-top:1rem;
+      padding-bottom:2rem;
+    }
+    .card{
+      border-radius:1rem;
+      padding:1.25rem;
+    }
+    .btn{
+      font-size:0.875rem;
+      padding:0.5rem 0.9rem;
+    }
+    .input{
+      font-size:0.875rem;
+      padding:0.6rem 0.85rem;
+    }
+    .row{
+      flex-wrap:wrap;
+      align-items:flex-start;
+    }
+    .thumb{
+      width:72px;
+      height:72px;
+    }
+  }
 </style>
 <style>
   @media (prefers-reduced-motion: reduce){
@@ -82,6 +142,18 @@
     </div>
 
     <div class="mt-4">
+      <label class="block text-sm mb-1 text-slate-600">案件說明（選填）</label>
+      <textarea id="desc" class="input" rows="4" placeholder="例：頂樓水塔多年未清洗，本次重點是除泥沙與消毒…"></textarea>
+      <div class="mt-2 flex flex-wrap items-center gap-1 text-[11px] text-slate-500">
+        <span class="mr-1">快速插入常用說明：</span>
+        <button type="button" class="btn-desc-template" data-template="ac-basic">冷氣清洗（住家）</button>
+        <button type="button" class="btn-desc-template" data-template="washer-basic">直立式洗衣機清洗（住家）</button>
+        <button type="button" class="btn-desc-template" data-template="tank-basic">水塔清洗</button>
+        <button type="button" class="btn-desc-template" data-template="ac-heavy">冷氣清洗（多年未保養）</button>
+      </div>
+    </div>
+
+    <div class="mt-4">
       <label class="block text-sm mb-2 text-slate-600">照片清單（可拖曳排序）</label>
       <div id="items" class="space-y-3"></div>
       <div class="flex flex-wrap gap-2 mt-2">
@@ -97,6 +169,11 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
       <div><label class="block text-sm mb-1 text-slate-600">標籤（選填）</label><input id="tags" class="input" placeholder="以逗號分隔，例如：冷氣, 住家"/></div>
       <div><label class="block text-sm mb-1 text-slate-600">自訂網址代稱（選填）</label><input id="slug" class="input" placeholder="例如：wang-2025-09"/></div>
+    <div class="mt-2 flex items-center gap-2 text-xs text-slate-600">
+      <input id="hidden" type="checkbox" class="w-4 h-4 border-slate-300 rounded"/>
+      <label for="hidden">建立後先設為「隱藏」，不在作品清單中公開顯示</label>
+    </div>
+
     </div>
 
     <div class="mt-5 flex items-center gap-3">
@@ -148,6 +225,17 @@
   </div>
 </div>
 
+<!-- 全域提示彈窗 -->
+<div id="alert-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60">
+  <div class="mx-4 max-w-sm rounded-2xl bg-white shadow-xl border border-slate-200 p-5">
+    <h2 class="text-base font-semibold text-slate-900 mb-2">提示</h2>
+    <p id="alert-message" class="text-sm text-slate-700 whitespace-pre-line"></p>
+    <div class="mt-4 flex justify-end">
+      <button id="alert-ok" type="button" class="btn btn-primary tap px-4 py-1.5 text-sm">知道了</button>
+    </div>
+  </div>
+</div>
+
 <!-- Lightbox -->
 <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="圖片放大檢視">
   <button class="close" aria-label="關閉">✕</button>
@@ -186,6 +274,37 @@
     }
 
 
+    function showAlert(message) {
+      const modal = document.getElementById('alert-modal');
+      const msgEl = document.getElementById('alert-message');
+      const okBtn = document.getElementById('alert-ok');
+      if (!modal || !msgEl || !okBtn) {
+        window.alert(message);
+        return;
+      }
+      msgEl.textContent = String(message || '');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      const close = () => {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+        okBtn.removeEventListener('click', onOk);
+        modal.removeEventListener('click', onBackdrop);
+      };
+      const onOk = () => close();
+      const onBackdrop = (e) => {
+        if (e.target === modal) close();
+      };
+
+      okBtn.addEventListener('click', onOk);
+      modal.addEventListener('click', onBackdrop);
+    }
+
+
+
+
+
     /* ===== 圖片 URL 轉換 ===== */
     function transform(url, opts){
       if(!url) return url;
@@ -202,7 +321,29 @@
     function getToken(){ try{ return localStorage.getItem(TOKEN_KEY) || ''; }catch{ return ''; } }
     function setToken(t){ try{ if(t) localStorage.setItem(TOKEN_KEY,t); }catch{} }
     function clearToken(){ try{ localStorage.removeItem(TOKEN_KEY); }catch{} }
-    function isLoggedIn(){ return !!getToken(); }
+   
+    // 案件說明常用範例快速插入
+    const descTemplates = {
+      'ac-basic': '住家分離式冷氣長期使用後，濾網與風鼓累積大量灰塵與霉菌，出風口有明顯黑垢與異味。本次針對室內機做清洗保養，包含濾網、風鼓、排水盤與外殼，高壓沖洗後恢復冷房效率並減少異味。',
+      'ac-heavy': '客戶長期未保養冷氣，鰭片與風鼓附著厚重灰塵，冷房效果明顯變差且用電量偏高。本次室內機清洗保養，先以環保藥劑溶解油污，再搭配高壓沖洗與排水管疏通，明顯改善冷房效率與風量。',
+      'washer-basic': '直立式洗衣機長期使用後，內槽與外槽間累積大量污泥、棉絮與黑色黴斑，洗完衣物容易殘留異味。本次分解內桶，徹底清洗內外槽、脫水槽與排水孔，搭配高壓沖洗處理，恢復洗衣槽乾淨。',
+      'tank-basic': '頂樓水塔多年未清洗，底部沉積泥沙與鐵鏽，內壁附著水垢，影響用水品質。本次先將水塔內水位放水，人工刷洗內壁與底部沉積物，最後再以清水多次沖洗，最後確保出水清澈。'
+    };
+    function initDescTemplateButtons(){
+      const textarea = document.getElementById('desc');
+      if (!textarea) return;
+      document.querySelectorAll('.btn-desc-template').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const key = btn.dataset.template;
+          const tpl = descTemplates[key];
+          if (!tpl) return;
+          const current = textarea.value.trim();
+          textarea.value = current ? (textarea.value.replace(/\s*$/, '') + '\n\n' + tpl) : tpl;
+          textarea.focus();
+        });
+      });
+    }
+ function isLoggedIn(){ return !!getToken(); }
 
     function refreshAdminUI(){
       const out = $('#admin-logged-out');
@@ -213,12 +354,12 @@
 
     async function adminLogin(){
       const pw = $('#admin-pass').value.trim();
-      if(!pw){ alert('請輸入管理密碼'); return; }
+      if(!pw){ showAlert('請輸入管理密碼'); return; }
       const r = await fetch('/.netlify/functions/admin-login',{
         method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pw })
       });
       const data = await r.json().catch(()=>({}));
-      if(!r.ok || !data.token){ alert(data.error || '登入失敗'); return; }
+      if(!r.ok || !data.token){ showAlert(data.error || '登入失敗'); return; }
       setToken(data.token);
       $('#admin-pass').value = '';
       refreshAdminUI();
@@ -229,6 +370,7 @@
     $('#admin-login-btn')?.addEventListener('click', adminLogin);
     $('#admin-logout-btn')?.addEventListener('click', adminLogout);
     refreshAdminUI();
+    initDescTemplateButtons();
 
     /* ====== 編輯列邏輯 ====== */
     function initRowControls(row){
@@ -318,7 +460,7 @@
       row.querySelector('.remove').addEventListener('click',()=>row.remove());
       fileInput.addEventListener('change',()=>{
         const f=fileInput.files[0]; if(!f) return;
-        if(f.size>MAX_MB*1024*1024){ alert('圖片超過 '+MAX_MB+'MB'); fileInput.value=''; return; }
+        if(f.size>MAX_MB*1024*1024){ showAlert('圖片超過 '+MAX_MB+'MB'); fileInput.value=''; return; }
         row._file = f; setPreviewFromFile(f);
       });
 
@@ -356,14 +498,16 @@
     $('#upload').addEventListener('click', async ()=>{
       // ✅ 需要先登入（新增）
       const token = getToken();
-      if (!token){ alert('請先登入管理員再建立分享'); return; }
+      if (!token){ showAlert('請先登入管理員再建立分享'); return; }
 
       const title=$('#title').value.trim();
       const date=$('#date').value;
+      const desc=$('#desc') ? $('#desc').value.trim() : '';
+      const hidden=$('#hidden') ? $('#hidden').checked : false;
       const tags=$('#tags').value.trim();
       let slug=$('#slug').value.trim();
       const rows=$$('#items>.row');
-      if(!rows.length) return alert('請至少新增一張');
+      if(!rows.length) return showAlert('請至少新增一張');
       if(!slug) slug=slugify((title||'case')+'-'+Date.now().toString().slice(-6));
 
       try{
@@ -374,8 +518,8 @@
         for (const row of rows){
           const f = row.querySelector('input[type=file]')?.files?.[0] || row._file;
           const caption = getRowCaption(row);
-          if(!f){ alert('有一列未選圖片'); return; }
-          if(f.size>MAX_MB*1024*1024){ alert('有圖片超過 '+MAX_MB+'MB'); return; }
+          if(!f){ showAlert('有一列未選圖片'); return; }
+          if(f.size>MAX_MB*1024*1024){ showAlert('有圖片超過 '+MAX_MB+'MB'); return; }
           setProgress(`上傳中… ${done+1} / ${rows.length}`);
           const url = await uploadToCloudinary(f, folder);
           items.push({ url, caption });
@@ -390,13 +534,14 @@
             // 🔐 帶上管理員 JWT（新增）
             'Authorization': 'Bearer ' + token
           },
-          body: JSON.stringify({ title, date, tags, slug, items })
+          body: JSON.stringify({ title, date, desc, tags, slug, items, visible: !hidden })
         });
         const txt = await resp.text();
         let data; try{ data = JSON.parse(txt); }catch{ data = { error: txt }; }
         if(!resp.ok || !data.ok) throw new Error(data.error || '建立失敗');
 
-        const shareUrl = location.origin + location.pathname + '#/v/' + encodeURIComponent(data.slug);
+        const basePath = location.pathname.replace(/index\.html$/,'').replace(/\/$/,'');
+        const shareUrl = location.origin + basePath + '/post.html?slug=' + encodeURIComponent(data.slug) + '&showDates=1';
         $('#share-url').value = shareUrl;
         $('#share-link').classList.remove('hidden');
         $('#copy-link').onclick = () =>
@@ -409,9 +554,9 @@
         setProgress('完成！');
       }catch(e){
         setProgress(''); setBar(0);
-        alert('建立失敗：' + (e.message || e));
+        showAlert('建立失敗：' + (e.message || e));
       }
-    });
+          });
 
     /* ===== Viewer + Lightbox ===== */
     let lbIndex = 0, lbItems = [];
@@ -429,6 +574,8 @@
         $('#viewer').classList.remove('hidden');
         $('#v-title').textContent=d.title||'未命名案件';
         $('#v-date').textContent=d.date? new Date(d.date).toLocaleDateString() : '';
+        const pageTitle=(d.title||'未命名案件')+'｜自然大叔 清洗照片';
+        document.title=pageTitle;
 
         const tagsBox=$('#v-tags'); tagsBox.innerHTML='';
         (d.tags||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(t=>{
@@ -457,7 +604,8 @@
         $('#downloadZip').href='/.netlify/functions/zip-images?slug='+encodeURIComponent(slug);
 
         const just = sessionStorage.getItem('justCreated') === '1';
-        const shareUrl = location.origin + location.pathname + '#/v/' + encodeURIComponent(slug);
+        const basePath = location.pathname.replace(/index\.html$/,'').replace(/\/$/,'');
+        const shareUrl = location.origin + basePath + '/post.html?slug=' + encodeURIComponent(slug) + '&showDates=1';
         if (just) {
           $('#share-url').value = shareUrl;
           $('#share-link').classList.remove('hidden');
@@ -470,7 +618,7 @@
           $('#share-link').classList.add('hidden');
         }
       }catch(e){
-        alert('讀取失敗：' + (e.message || e));
+        showAlert('讀取失敗：' + (e.message || e));
       }
     }
 

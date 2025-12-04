@@ -8,7 +8,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#0f172a" />
-  <title>自然大叔｜照片清單</title>
+  <meta name="description" content="自然大叔清洗案例總覽，包含冷氣、水塔、洗衣機等案例照片。" />
+  <title>案例總覽｜自然大叔</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -29,6 +30,7 @@
     body{
       margin:0;
       background:var(--bg);
+      background:linear-gradient(to bottom,#f9fafb,#e5e7eb);
       color:var(--fg);
       font-family: system-ui,-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",Arial,Helvetica,sans-serif;
       -webkit-font-smoothing:antialiased;
@@ -105,7 +107,25 @@
       line-height:1.2;
     }
 
-    .admin-panel{
+    
+    .quick-filters{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      margin-top:8px;
+      font-size:12px;
+    }
+    .quick-filters button{
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#fff;
+      cursor:pointer;
+    }
+    .quick-filters button:hover{
+      background:#f3f4f6;
+    }
+.admin-panel{
       display:flex;
       flex-wrap:wrap;
       align-items:center;
@@ -294,6 +314,59 @@
       font-size:14px;
     }
     
+
+    /* ==== 提示訊息客製彈窗 ==== */
+    #alert-modal{
+      position:fixed;
+      inset:0;
+      background:rgba(15,23,42,0.55);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      z-index:40;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .18s ease-out;
+    }
+    #alert-modal.show{
+      opacity:1;
+      pointer-events:auto;
+    }
+    .alert-card{
+      width:100%;
+      max-width:360px;
+      background:#f9fafb;
+      border-radius:16px;
+      box-shadow:0 18px 45px rgba(15,23,42,0.35);
+      border:1px solid var(--border);
+      padding:16px 18px 14px;
+      font-size:14px;
+    }
+    .alert-title{
+      font-size:16px;
+      font-weight:600;
+      margin:0 0 4px;
+      color:#111827;
+    }
+    .alert-message{
+      margin:0;
+      color:var(--muted);
+      white-space:pre-line;
+    }
+    .alert-actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+      margin-top:16px;
+    }
+    #alert-ok{
+      background:#0f172a;
+      border-color:#0f172a;
+      color:#fff;
+    }
+
+
     /* ==== 刪除確認客製彈窗 ==== */
     #confirm-modal{
       position:fixed;
@@ -339,6 +412,34 @@
       gap:8px;
       margin-top:16px;
     }
+
+    /* 強化刪除確認按鈕樣式 */
+    #confirm-ok,
+    #confirm-cancel{
+      border-radius:999px;
+      padding:6px 14px;
+      font-weight:600;
+      border-width:1px;
+      border-style:solid;
+      cursor:pointer;
+    }
+    #confirm-cancel{
+      background:#fff;
+      border-color:#d1d5db;
+      color:#374151;
+    }
+    #confirm-cancel:hover{
+      background:#f3f4f6;
+    }
+    #confirm-ok{
+      background:#dc2626;
+      border-color:#dc2626;
+      color:#fff;
+    }
+    #confirm-ok:hover{
+      background:#b91c1c;
+      border-color:#b91c1c;
+    }
     #confirm-cancel{
       background:#fff;
     }
@@ -349,14 +450,49 @@
     }
 
     @media(max-width:600px){
+      body{
+        font-size:14px;
+      }
+      header{
+        padding:10px 0;
+      }
       .navrow{
         flex-direction:column;
         align-items:stretch;
+        gap:10px;
+      }
+      .brand{
+        width:100%;
+        justify-content:flex-start;
+      }
+      #filters{
+        width:100%;
+        flex-direction:column;
+        align-items:stretch;
+      }
+      #filters input[type="search"],
+      #filters select{
+        width:100%;
+      }
+      .quick-filters{
+        width:100%;
       }
       .admin-panel{
         margin-left:0;
         width:100%;
         justify-content:flex-start;
+      }
+      .card-list{
+        gap:12px;
+      }
+      .card{
+        padding:12px 12px 12px;
+      }
+      .card-title{
+        font-size:15px;
+      }
+      .card-meta{
+        font-size:12px;
       }
     }
   </style>
@@ -380,6 +516,11 @@
         </select>
         <button type="submit">套用</button>
       </form>
+      <div class="quick-filters">
+        <button type="button" class="quick-filter" data-tag="冷氣">冷氣</button>
+        <button type="button" class="quick-filter" data-tag="洗衣機">洗衣機</button>
+        <button type="button" class="quick-filter" data-tag="水塔">水塔</button>
+      </div>
 
       <div class="admin-panel">
         <div id="admin-logged-out" class="admin-row">
@@ -413,6 +554,17 @@
   </div>
 </main>
 
+
+  <!-- 提示訊息自訂彈窗 -->
+  <div id="alert-modal">
+    <div class="alert-card">
+      <h2 class="alert-title">提示</h2>
+      <p id="alert-message" class="alert-message"></p>
+      <div class="alert-actions">
+        <button id="alert-ok" type="button">知道了</button>
+      </div>
+    </div>
+  </div>
 
   <!-- 刪除確認自訂彈窗 -->
   <div id="confirm-modal">
@@ -448,6 +600,31 @@
     return !!getToken();
   }
 
+
+  function showAlert(message){
+    const modal = document.getElementById('alert-modal');
+    const msgEl = document.getElementById('alert-message');
+    const okBtn = document.getElementById('alert-ok');
+    if (!modal || !msgEl || !okBtn){
+      window.alert(message);
+      return;
+    }
+    msgEl.textContent = String(message || '');
+    modal.classList.add('show');
+
+    const cleanup = ()=>{
+      modal.classList.remove('show');
+      okBtn.removeEventListener('click', onOk);
+      modal.removeEventListener('click', onBackdrop);
+    };
+    const onOk = ()=> cleanup();
+    const onBackdrop = (e)=>{ if(e.target === modal) cleanup(); };
+
+    okBtn.addEventListener('click', onOk);
+    modal.addEventListener('click', onBackdrop);
+  }
+
+
   function refreshAdminUI(){
     const loggedOut = document.getElementById('admin-logged-out');
     const loggedIn  = document.getElementById('admin-logged-in');
@@ -466,7 +643,7 @@
     const pwInput = document.getElementById('admin-pass');
     const password = pwInput.value.trim();
     if (!password){
-      alert('請輸入管理密碼');
+      showAlert('請輸入管理密碼');
       return;
     }
 
@@ -477,7 +654,7 @@
     });
     const data = await r.json().catch(()=>({}));
     if(!r.ok || !data.token){
-      alert(data.error || '登入失敗');
+      showAlert(data.error || '登入失敗');
       return;
     }
     setToken(data.token);
@@ -520,7 +697,7 @@
   async function apiToggleVisible(slug, nextVisible){
     const token = getToken();
     if (!token){
-      alert('請先登入管理員');
+      showAlert('請先登入管理員');
       return;
     }
     const resp = await fetch('/.netlify/functions/update-visible', {
@@ -536,14 +713,14 @@
     });
     const data = await resp.json().catch(()=>({}));
     if(!resp.ok){
-      alert(data.error || '更新顯示狀態失敗');
+      showAlert(data.error || '更新顯示狀態失敗');
     }
   }
 
   async function apiDeletePost(slug){
     const token = getToken();
     if (!token){
-      alert('請先登入管理員');
+      showAlert('請先登入管理員');
       return;
     }
     const resp = await fetch('/.netlify/functions/delete-post', {
@@ -556,7 +733,7 @@
     });
     const data = await resp.json().catch(()=>({}));
     if(!resp.ok){
-      alert(data.error || '刪除失敗');
+      showAlert(data.error || '刪除失敗');
     }
   }
 
@@ -649,8 +826,9 @@
     });
   }
 
-  async function deletePost(slug){
-    const msg = `確定要永久刪除「${slug}」？\n此動作會刪除所有圖片與資料，且無法復原！`;
+  async function deletePost(slug, displayName){
+    const name = displayName || slug;
+    const msg = `確定要永久刪除這筆案件嗎？\n\n案件/地點：${name}\n\n此動作會刪除所有圖片與資料，且無法復原！`;
     const ok = await showConfirm(msg);
     if(!ok) return;
     await apiDeletePost(slug);
@@ -759,7 +937,7 @@
         const delBtn = document.createElement('button');
         delBtn.className = 'danger';
         delBtn.textContent = '刪除';
-        delBtn.addEventListener('click', ()=>{ deletePost(slug); });
+        delBtn.addEventListener('click', ()=>{ deletePost(slug, it.title || slug); });
         ctrl.appendChild(delBtn);
 
         card.appendChild(ctrl);
@@ -819,6 +997,19 @@
 
     document.getElementById('showHiddenToggle')
       .addEventListener('change', ()=>{ load(); });
+
+    // 常用分類快捷鍵
+    document.querySelectorAll('.quick-filter').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const tag = btn.dataset.tag || btn.textContent.trim();
+        const qInput = document.getElementById('q');
+        if (qInput){
+          qInput.value = tag;
+        }
+        currentPage = 1;
+        render(applyFilters(allItems));
+      });
+    });
   }
 
   function init(){
