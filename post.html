@@ -346,32 +346,30 @@ function render(slug, data){
   }
 
   const first = qsel('share');
-if (first){
-  first.textContent = '連結分享';
-  first.href = '#';
-  first.removeAttribute('target'); first.removeAttribute('rel');
-  const onShare = async function(e){
-    e.preventDefault(); e.stopImmediatePropagation();
-    const slug0 = getSlug();
-const sp0 = new URL(location.href).searchParams;
-const showDates0 = sp0.get('showDates') === '1';
-const basePath0 = location.pathname.replace(/\/post\.html$/,'');
-    const slug0 = getSlug();
-    const sp0 = new URL(location.href).searchParams;
-    const showDates0 = sp0.get('showDates') === '1';
-    const basePath0 = location.pathname.replace(/\/post\.html$/,'');
-    const shareUrl = location.origin + basePath0 + '/p/' + encodeURIComponent(slug0 || '') + (showDates0 ? '?showDates=1' : '');
-    const title = (qsel('title') && qsel('title').textContent) || document.title || '分享';
-    try{
-      if (navigator.share){ await navigator.share({ title, url: shareUrl }); }
-      else if (navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(shareUrl); showAlert('已複製分享連結'); }
-      else { showPrompt('複製此連結：', shareUrl); }
-    }catch(_){}
-  };
-  const clone = first.cloneNode(true);
-  first.parentNode.replaceChild(clone, first);
-  clone.addEventListener('click', onShare, true);
-}
+  if (first){
+    first.textContent = '連結分享';
+    first.href = '#';
+    first.removeAttribute('target');
+    first.removeAttribute('rel');
+    const onShare = async function(e){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const slug0 = getSlug();
+      const sp0 = new URL(location.href).searchParams;
+      const showDates0 = sp0.get('showDates') === '1';
+      const basePath0 = location.pathname.replace(/\/post\.html$/,'');
+      const shareUrl = location.origin + basePath0 + '/p/' + encodeURIComponent(slug0 || '') + (showDates0 ? '?showDates=1' : '');
+      const title = (qsel('title') && qsel('title').textContent) || document.title || '分享';
+      try{
+        if (navigator.share){ await navigator.share({ title, url: shareUrl }); }
+        else if (navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(shareUrl); showAlert('已複製分享連結'); }
+        else { showPrompt('複製此連結：', shareUrl); }
+      }catch(_){ }
+    };
+    const clone = first.cloneNode(true);
+    first.parentNode.replaceChild(clone, first);
+    clone.addEventListener('click', onShare, true);
+  }
 
   const grid = qsel('images'); if (grid) grid.innerHTML = '';
   for (let i = 0; i < normalized.length; i++){
