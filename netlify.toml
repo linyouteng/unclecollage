@@ -7,3 +7,8 @@
 
 [build.environment]
   NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/p/*"
+  to = "/.netlify/functions/share?slug=:splat"
+  status = 200

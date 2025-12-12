@@ -4,7 +4,17 @@
 <head>
 <meta content="#0f172a" name="theme-color"/>
 <meta charset="utf-8"/>
-<title>照片讀取中...</title>
+<title>成果相簿｜照片與作業說明</title>
+<meta name="description" content="點開查看成果照片與作業說明，可下載原始照片（ZIP）。"/>
+<meta property="og:title" content="成果相簿｜照片與作業說明"/>
+<meta property="og:description" content="點開查看成果照片與作業說明，可下載原始照片（ZIP）。"/>
+<meta property="og:type" content="website"/>
+<meta property="og:image" content="logo.png"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="成果相簿｜照片與作業說明"/>
+<meta name="twitter:description" content="點開查看成果照片與作業說明，可下載原始照片（ZIP）。"/>
+<meta name="twitter:image" content="logo.png"/>
+
 <link href="logo.png" rel="icon" type="image/png"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
@@ -342,7 +352,15 @@ if (first){
   first.removeAttribute('target'); first.removeAttribute('rel');
   const onShare = async function(e){
     e.preventDefault(); e.stopImmediatePropagation();
-    const shareUrl = location.href;
+    const slug0 = getSlug();
+const sp0 = new URL(location.href).searchParams;
+const showDates0 = sp0.get('showDates') === '1';
+const basePath0 = location.pathname.replace(/\/post\.html$/,'');
+    const slug0 = getSlug();
+    const sp0 = new URL(location.href).searchParams;
+    const showDates0 = sp0.get('showDates') === '1';
+    const basePath0 = location.pathname.replace(/\/post\.html$/,'');
+    const shareUrl = location.origin + basePath0 + '/p/' + encodeURIComponent(slug0 || '') + (showDates0 ? '?showDates=1' : '');
     const title = (qsel('title') && qsel('title').textContent) || document.title || '分享';
     try{
       if (navigator.share){ await navigator.share({ title, url: shareUrl }); }
