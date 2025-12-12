@@ -10,5 +10,5 @@
 
 [[redirects]]
   from = "/p/*"
-  to = "/.netlify/functions/share?slug=:splat"
+  to = "/.netlify/functions/share/:splat"
   status = 200

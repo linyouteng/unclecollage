@@ -27,8 +27,17 @@ export default async (request) => {
   }
 
   const url = new URL(request.url);
-  const slug = url.searchParams.get('slug') || '';
+
+  // slug 來源：優先吃 query (?slug=xxx)，否則從路徑 /share/<slug> 解析
+  // （Netlify redirects 不支援把 :splat 注入 query string，所以要走 path 參數）
+  const slugFromQuery = url.searchParams.get('slug');
+  let slug = slugFromQuery ? String(slugFromQuery) : '';
   const showDates = url.searchParams.get('showDates') === '1';
+
+  if (!slug) {
+    const m = url.pathname.match(/\/\.netlify\/functions\/share\/([^\/?#]+)/);
+    if (m && m[1]) slug = decodeURIComponent(m[1]);
+  }
 
   if (!slug) {
     return new Response('slug required', { status: 400 });
@@ -37,7 +46,7 @@ export default async (request) => {
   // 推導網站 basePath（若你把網站放在子路徑，仍能正常組 URL）
   // 例：/sub/.netlify/functions/share -> basePath=/sub
   const fnPath = url.pathname;
-  const basePath = fnPath.replace(/\/\.netlify\/functions\/share$/, '');
+  const basePath = fnPath.replace(/\/\.netlify\/functions\/share(?:\/.*)?$/, '');
   const origin = `${url.protocol}//${url.host}`;
 
   const cloud = process.env.CLD_CLOUD_NAME;
