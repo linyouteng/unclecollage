@@ -1,119 +1,157 @@
 // /.netlify/functions/share.js
-// 目的：提供「可被 LINE / iMessage 抓到的 OG 預覽」的分享頁（每個案件都有自己的標題/說明/封面）
-// 連結格式：/p/<slug>?showDates=1
+// Dynamic Open Graph preview page for sharing /p/<slug>
+// - Works for link preview crawlers (LINE/iMessage) because OG tags exist in raw HTML
+// - Redirects human visitors to post.html?slug=...
 
-function escapeHtml(str = '') {
-  return String(str)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+function pickHeader(headers, name) {
+  if (!headers) return '';
+  const key = Object.keys(headers).find(k => k.toLowerCase() === name.toLowerCase());
+  return key ? headers[key] : '';
 }
 
-function compactText(str = '') {
-  return String(str).replace(/\s+/g, ' ').trim();
+function safeDecode(s) {
+  try { return decodeURIComponent(s); } catch { return s; }
 }
 
-function truncate(str = '', max = 120) {
-  const s = compactText(str);
-  if (s.length <= max) return s;
-  return s.slice(0, max - 1) + '…';
+function extractSlugFromPath(pathname) {
+  if (!pathname) return '';
+  // Normalize: remove query/hash if present
+  const clean = pathname.split('?')[0].split('#')[0];
+
+  // Accept both:
+  // - /p/<slug>
+  // - /.netlify/functions/share/<slug>
+  const m1 = clean.match(/\/p\/([^\/]+)/i);
+  if (m1 && m1[1]) return safeDecode(m1[1]);
+
+  const m2 = clean.match(/\/share\/([^\/]+)/i);
+  if (m2 && m2[1]) return safeDecode(m2[1]);
+
+  // Fallback: last segment (e.g., when rewrite uses :splat but path keeps original)
+  const parts = clean.split('/').filter(Boolean);
+  if (parts.length >= 2 && parts[0].toLowerCase() === 'p') return safeDecode(parts[1]);
+  return '';
 }
 
-export default async (request) => {
-  if (request.method !== 'GET') {
-    return new Response('Method not allowed', { status: 405 });
-  }
+function getSlug(event) {
+  const qs = event.queryStringParameters || {};
+  if (qs.slug) return safeDecode(String(qs.slug)).trim();
 
-  const url = new URL(request.url);
+  // Different Netlify routing modes may expose different path fields.
+  const candidates = [
+    event.path,
+    event.rawUrl,
+    pickHeader(event.headers, 'x-original-uri'),
+    pickHeader(event.headers, 'x-forwarded-uri'),
+    pickHeader(event.headers, 'x-nf-original-path'),
+    pickHeader(event.headers, 'referer'),
+  ].filter(Boolean);
 
-  // slug 來源：優先吃 query (?slug=xxx)，否則從路徑 /share/<slug> 解析
-  // （Netlify redirects 不支援把 :splat 注入 query string，所以要走 path 參數）
-  const slugFromQuery = url.searchParams.get('slug');
-  let slug = slugFromQuery ? String(slugFromQuery) : '';
-  const showDates = url.searchParams.get('showDates') === '1';
-
-  if (!slug) {
-    const m = url.pathname.match(/\/\.netlify\/functions\/share\/([^\/?#]+)/);
-    if (m && m[1]) slug = decodeURIComponent(m[1]);
-  }
-
-  if (!slug) {
-    return new Response('slug required', { status: 400 });
-  }
-
-  // 推導網站 basePath（若你把網站放在子路徑，仍能正常組 URL）
-  // 例：/sub/.netlify/functions/share -> basePath=/sub
-  const fnPath = url.pathname;
-  const basePath = fnPath.replace(/\/\.netlify\/functions\/share(?:\/.*)?$/, '');
-  const origin = `${url.protocol}//${url.host}`;
-
-  const cloud = process.env.CLD_CLOUD_NAME;
-  const dataUrl = cloud
-    ? `https://res.cloudinary.com/${cloud}/raw/upload/collages/${encodeURIComponent(slug)}/data.json`
-    : '';
-
-  let data = null;
-  try {
-    if (dataUrl) {
-      const resp = await fetch(dataUrl);
-      if (resp.ok) data = await resp.json().catch(() => null);
+  for (const c of candidates) {
+    try {
+      // If it's a full URL, parse it; else treat as a path.
+      const u = c.startsWith('http://') || c.startsWith('https://')
+        ? new URL(c)
+        : new URL('https://example.invalid' + c);
+      const slug = extractSlugFromPath(u.pathname);
+      if (slug) return slug;
+    } catch {
+      // ignore
+      const slug = extractSlugFromPath(String(c));
+      if (slug) return slug;
     }
-  } catch {
-    data = null;
+  }
+  return '';
+}
+
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+export const handler = async (event) => {
+  const slug = getSlug(event);
+  if (!slug) {
+    return {
+      statusCode: 400,
+      headers: { 'content-type': 'text/plain; charset=utf-8' },
+      body: 'slug required',
+    };
   }
 
-  const siteName = '案例分享';
-  const pageTitle = data?.title ? `${data.title}｜${siteName}` : `成果相簿｜${siteName}`;
-  const descRaw = data?.desc || data?.description || '查看成果照片與作業說明，可下載原始照片（ZIP）。';
-  const pageDesc = truncate(descRaw, 130);
+  const qs = event.queryStringParameters || {};
+  const showDates = qs.showDates != null ? String(qs.showDates) : '';
 
-  const preview = data?.preview || (Array.isArray(data?.items) && data.items[0] ? data.items[0].url : '');
-  const defaultImage = `${origin}${basePath}/logo.png`;
-  const imageUrl = preview && /^https?:\/\//i.test(preview) ? preview : defaultImage;
+  const proto = pickHeader(event.headers, 'x-forwarded-proto') || 'https';
+  const host = pickHeader(event.headers, 'host') || '';
+  const origin = host ? `${proto}://${host}` : '';
 
-  const shareUrl = `${origin}${basePath}/p/${encodeURIComponent(slug)}${showDates ? '?showDates=1' : ''}`;
-  const postUrl = `${origin}${basePath}/post.html?slug=${encodeURIComponent(slug)}${showDates ? '&showDates=1' : ''}`;
+  const shareUrl = origin ? `${origin}/p/${encodeURIComponent(slug)}${showDates ? `?showDates=${encodeURIComponent(showDates)}` : ''}` : '';
+  const targetUrl = origin
+    ? `${origin}/post.html?slug=${encodeURIComponent(slug)}${showDates ? `&showDates=${encodeURIComponent(showDates)}` : ''}`
+    : `/post.html?slug=${encodeURIComponent(slug)}${showDates ? `&showDates=${encodeURIComponent(showDates)}` : ''}`;
 
-  const html = `<!DOCTYPE html>
+  // Fetch record JSON (public raw file on Cloudinary)
+  let record = null;
+  const cloud = process.env.CLD_CLOUD_NAME || '';
+  if (cloud) {
+    try {
+      const dataUrl = `https://res.cloudinary.com/${cloud}/raw/upload/collages/${encodeURIComponent(slug)}/data.json`;
+      const resp = await fetch(dataUrl);
+      if (resp.ok) record = await resp.json().catch(() => null);
+    } catch {
+      record = null;
+    }
+  }
+
+  const title = (record && record.title) ? String(record.title) : '施工成果相簿';
+  const descRaw = (record && (record.desc || record.description)) ? String(record.desc || record.description) : '點開查看施工前後對比照片、作業說明，並可下載原始照片（ZIP）。';
+  const desc = descRaw.length > 160 ? descRaw.slice(0, 157) + '…' : descRaw;
+
+  // Prefer record.preview (cover), fallback to site logo
+  let image = (record && record.preview) ? String(record.preview) : '';
+  if (!image && origin) image = `${origin}/logo.png`;
+  if (!image) image = '/logo.png';
+
+  const html = `<!doctype html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(pageTitle)}</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(title)}</title>
 
-  <meta name="description" content="${escapeHtml(pageDesc)}" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="${escapeHtml(siteName)}" />
-  <meta property="og:title" content="${escapeHtml(pageTitle)}" />
-  <meta property="og:description" content="${escapeHtml(pageDesc)}" />
-  <meta property="og:image" content="${escapeHtml(imageUrl)}" />
-  <meta property="og:url" content="${escapeHtml(shareUrl)}" />
+  <meta name="description" content="${escapeHtml(desc)}">
 
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="${escapeHtml(pageTitle)}" />
-  <meta name="twitter:description" content="${escapeHtml(pageDesc)}" />
-  <meta name="twitter:image" content="${escapeHtml(imageUrl)}" />
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:description" content="${escapeHtml(desc)}">
+  <meta property="og:image" content="${escapeHtml(image)}">
+  <meta property="og:url" content="${escapeHtml(shareUrl || targetUrl)}">
 
-  <!-- 給真人使用者快速跳轉；預覽抓取通常只看 OG，不會等跳轉 -->
-  <meta http-equiv="refresh" content="0;url=${escapeHtml(postUrl)}" />
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escapeHtml(title)}">
+  <meta name="twitter:description" content="${escapeHtml(desc)}">
+  <meta name="twitter:image" content="${escapeHtml(image)}">
+
+  <meta http-equiv="refresh" content="0; url=${escapeHtml(targetUrl)}">
 </head>
-<body style="font-family: system-ui, -apple-system, 'Noto Sans TC', 'Segoe UI', Arial, sans-serif; padding: 20px; color: #111;">
-  <p style="margin:0 0 8px 0;">正在開啟相簿…</p>
-  <p style="margin:0; font-size: 14px;">
-    若未自動跳轉，請點這裡：
-    <a href="${escapeHtml(postUrl)}" style="color:#2563eb;">開啟成果相簿</a>
-  </p>
+<body style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; padding:24px; line-height:1.5;">
+  <div>正在開啟相簿… 如果沒有自動跳轉，請點此連結：</div>
+  <p><a href="${escapeHtml(targetUrl)}">${escapeHtml(targetUrl)}</a></p>
+  <script>location.replace(${JSON.stringify(targetUrl)});</script>
 </body>
 </html>`;
 
-  return new Response(html, {
-    status: 200,
+  return {
+    statusCode: 200,
     headers: {
       'content-type': 'text/html; charset=utf-8',
-      // 避免各平台快取太久，方便你更新描述後能較快刷新
-      'cache-control': 'public, max-age=300',
+      'cache-control': 'no-store',
     },
-  });
+    body: html,
+  };
 };
