@@ -2,139 +2,246 @@
 import { v2 as cloudinary } from 'cloudinary';
 import crypto from 'crypto';
 
+// ---- Cloudinary 設定 ----
 cloudinary.config({
   cloud_name: process.env.CLD_CLOUD_NAME,
   api_key: process.env.CLD_API_KEY,
   api_secret: process.env.CLD_API_SECRET,
 });
 
+// ---- CORS + 回傳工具 ----
 const CORS_HEADERS = {
   'content-type': 'application/json',
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET,POST,OPTIONS',
-  'access-control-allow-headers': 'content-type,authorization',
+  'access-control-allow-headers': 'content-type,authorization'
 };
 
-function preflight(){ return new Response(null,{status:204,headers:CORS_HEADERS}); }
-function sendJSON(obj,status=200){ return new Response(JSON.stringify(obj),{status,headers:CORS_HEADERS}); }
-function errorJSON(err,status=500){
-  const msg=(err&&(err.message||err.error?.message))||String(err)||'Unknown error';
-  try{console.error('[list-posts] error:',err);}catch{}
-  return sendJSON({error:msg},status);
+function sendJSON(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: CORS_HEADERS,
+  });
 }
 
-// JWT
-function decodeB64Json(str){
-  const pad=str.length%4===2?'==':str.length%4===3?'=':'';
-  const s=str.replace(/-/g,'+').replace(/_/g,'/')+pad;
-  return JSON.parse(Buffer.from(s,'base64').toString('utf8'));
+function preflight() {
+  return new Response(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
 }
-function verifyJWT(token, secret){
-  try{
-    const [h,p,s]=token.split('.');
-    if(!h||!p||!s) return null;
-    const data=`${h}.${p}`;
-    const sig=crypto.createHmac('sha256',secret).update(data).digest('base64')
-      .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/g,'');
-    if(sig!==s) return null;
-    const payload=decodeB64Json(p);
-    if(payload?.exp && Date.now()>=payload.exp*1000) return null;
+
+function errorJSON(err, status = 500) {
+  const msg =
+    (err && (err.message || err.error?.message)) ||
+    String(err) ||
+    'Unknown error';
+  try { console.error('[list-posts] error:', err); } catch {}
+  return sendJSON({ error: msg }, status);
+}
+
+// ---- JWT 驗證，跟 update-visible.js 同一套 HS256 ----
+function decodeB64Json(str) {
+  const pad = str.length % 4 === 2 ? '==' :
+              str.length % 4 === 3 ? '='  : '';
+  const s = str.replace(/-/g,'+').replace(/_/g,'/') + pad;
+  return JSON.parse(Buffer.from(s, 'base64').toString('utf8'));
+}
+
+function verifyJWT(token, secret) {
+  try {
+    const [h,p,s] = token.split('.');
+    if (!h || !p || !s) return null;
+
+    const header = decodeB64Json(h);
+    if (header.alg !== 'HS256') return null;
+
+    const expected = crypto
+      .createHmac('sha256', secret)
+      .update(`${h}.${p}`)
+      .digest('base64')
+      .replace(/=/g,'')
+      .replace(/\+/g,'-')
+      .replace(/\//g,'_');
+
+    if (expected !== s) return null;
+
+    const payload = decodeB64Json(p);
+    // exp 是秒
+    if (payload.exp && Date.now() >= payload.exp * 1000) return null;
+
     return payload;
-  }catch{return null;}
-}
-function isAdmin(request){
-  const auth=request.headers.get('authorization')||'';
-  const m=auth.match(/^Bearer\s+(.+)$/i);
-  if(!m) return null;
-  const secret=process.env.ADMIN_JWT_SECRET||'';
-  if(!secret) return null;
-  return verifyJWT(m[1].trim(), secret);
-}
-
-function normalizeTags(tags){
-  if(Array.isArray(tags)) return tags.map(x=>String(x).trim()).filter(Boolean);
-  if(typeof tags==='string') return tags.split(/[,，\s]+/).map(s=>s.trim()).filter(Boolean);
-  return [];
-}
-async function loadIndex(){
-  try{
-    const res=await cloudinary.api.resource('collages/index',{resource_type:'raw'});
-    const url=res?.secure_url||res?.url;
-    if(!url) return {items:[]};
-    const r=await fetch(url,{headers:{accept:'application/json'}});
-    if(!r.ok) return {items:[]};
-    const data=await r.json().catch(()=>null);
-    if(!data||!Array.isArray(data.items)) return {items:[]};
-    return data;
-  }catch(e){
-    if(e?.http_code===404) return {items:[]};
-    const msg=String(e?.error?.message||e?.message||'');
-    if(/not found/i.test(msg)) return {items:[]};
-    throw e;
+  } catch {
+    return null;
   }
 }
-function toDateMs(x){
-  const ms=new Date(x||0).getTime();
-  return Number.isFinite(ms)? ms:0;
+
+function requireAdmin(request) {
+  const authHeader = request.headers.get('authorization') || '';
+  const m = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (!m) return null;
+
+  const secret = process.env.ADMIN_JWT_SECRET || '';
+  if (!secret) return null;
+
+  const payload = verifyJWT(m[1], secret);
+  if (!payload) return null;
+  if (payload.role !== 'admin') return null;
+
+  return payload;
 }
 
-export default async (request)=>{
-  if(request.method==='OPTIONS') return preflight();
-  if(request.method!=='GET') return sendJSON({error:'Method not allowed'},405);
+// ---- 主 handler ----
+export default async (request) => {
+  // CORS 預檢
+  if (request.method === 'OPTIONS') return preflight();
+  if (request.method !== 'GET') {
+    return sendJSON({ error: 'Method not allowed' }, 405);
+  }
 
-  try{
-    const u=new URL(request.url);
-    const page=Math.max(1, parseInt(u.searchParams.get('page')||'1',10)||1);
-    const pageSizeRaw=parseInt(u.searchParams.get('pageSize')||'6',10)||6;
-    const pageSize=Math.min(50, Math.max(1, pageSizeRaw));
-    const q=(u.searchParams.get('q')||'').trim().toLowerCase();
-    const sort=(u.searchParams.get('sort')||'date_desc').trim();
-    const showHidden=(u.searchParams.get('showHidden')||'')==='1';
-    const allowShowHidden=!!(showHidden && isAdmin(request));
-
-    const indexObj=await loadIndex();
-    let items=Array.isArray(indexObj.items)? indexObj.items.slice():[];
-
-    items=items.map(it=>{
-      if(!it||!it.slug) return null;
-      const tags=normalizeTags(it.tags);
-      return {
-        slug:String(it.slug),
-        title:it.title||'',
-        date:it.date||'',
-        desc:it.desc||'',
-        tags,
-        preview:it.preview||null,
-        visible: it.visible !== false,
-        created_at: it.created_at||null,
-        updated_at: it.updated_at||null,
-      };
-    }).filter(Boolean);
-
-    if(!allowShowHidden) items=items.filter(it=>it.visible);
-
-    if(q){
-      items=items.filter(it=>{
-        const hay=[it.title,it.slug,it.desc,(it.tags||[]).join(' ')].filter(Boolean).join(' ').toLowerCase();
-        return hay.includes(q);
-      });
+  try {
+    const cloud = process.env.CLD_CLOUD_NAME;
+    if (!cloud || !process.env.CLD_API_KEY || !process.env.CLD_API_SECRET) {
+      return errorJSON('Missing Cloudinary env vars', 500);
     }
 
-    items.sort((a,b)=>{
-      if(sort==='date_asc') return toDateMs(a.date||a.created_at)-toDateMs(b.date||b.created_at);
-      if(sort==='title_asc') return String(a.title||'').localeCompare(String(b.title||''));
-      if(sort==='title_desc') return String(b.title||'').localeCompare(String(a.title||''));
-      return toDateMs(b.date||b.created_at)-toDateMs(a.date||a.created_at); // date_desc
-    });
+    // 讀取 query 參數 showHidden=1 嗎？
+    const url = new URL(request.url);
+    const wantShowHidden = url.searchParams.get('showHidden') === '1';
 
-    const total=items.length;
-    const totalPages=Math.max(1, Math.ceil(total/pageSize));
-    const safePage=Math.min(page,totalPages);
-    const start=(safePage-1)*pageSize;
-    const pageItems=items.slice(start,start+pageSize);
+    // 如果有要求 showHidden=1，就檢查是不是管理員
+    let allowShowHidden = false;
+    if (wantShowHidden) {
+      const adminPayload = requireAdmin(request);
+      if (!adminPayload) {
+        return sendJSON({ error: 'Unauthorized' }, 401);
+      }
+      allowShowHidden = true; // 有管理員 token，OK 顯示全部
+    }
 
-    return sendJSON({items:pageItems,total,page:safePage,pageSize,totalPages},200);
-  }catch(e){
-    return errorJSON(e,500);
+    // ----------------------------
+    // STEP 1: 把 collages/ 底下所有 raw 檔列出來（分頁抓完）
+    // ----------------------------
+    const rawResources = [];
+    let nextCursor;
+
+    do {
+      const res = await cloudinary.api.resources({
+        resource_type: 'raw',
+        type: 'upload',
+        prefix: 'collages/',
+        max_results: 100,
+        next_cursor: nextCursor,
+      });
+
+      rawResources.push(...(res.resources || []));
+      nextCursor = res.next_cursor || undefined;
+    } while (nextCursor);
+
+    // ----------------------------
+    // STEP 2: 找出每個 slug 目前應該用哪一個 data 檔
+    // - 同 slug 可能有 data.json / data
+    // - 我們偏好沒副檔名的 public_id (collages/<slug>/data)
+    // - 如果有多個版本，拿 version 最大的
+    // 結果放到 bySlug: slug -> { slug, public_id, version }
+    // ----------------------------
+    const bySlug = new Map();
+
+    for (const r of rawResources) {
+      const pid = r.public_id || '';   // e.g. "collages/case-927128/data"
+      const ver = r.version;           // Cloudinary version number
+      const m = /^collages\/([^/]+)\/data(?:\.json)?$/i.exec(pid);
+      if (!m) continue;
+      const slug = m[1];
+
+      const current = bySlug.get(slug);
+      if (!current) {
+        bySlug.set(slug, { slug, public_id: pid, version: ver });
+      } else {
+        const currentHasJson = /\.json$/i.test(current.public_id);
+        const incomingHasJson = /\.json$/i.test(pid);
+        let replace = false;
+
+        // 規則 1: 如果現在的是 .json 但新的是沒 .json，換成沒 .json
+        if (currentHasJson && !incomingHasJson) {
+          replace = true;
+        // 規則 2: 否則比 version，version 較新就取代
+        } else if (ver > current.version) {
+          replace = true;
+        }
+
+        if (replace) {
+          bySlug.set(slug, { slug, public_id: pid, version: ver });
+        }
+      }
+    }
+
+    // ----------------------------
+    // STEP 3: 平行抓每個 slug 的 data.json（用 versioned URL，避開舊快取）
+    // ----------------------------
+    const targets = Array.from(bySlug.values()); // [{slug, public_id, version}, ...]
+
+    const results = await Promise.all(
+      targets.map(async ({ slug, public_id, version }) => {
+        try {
+          const hasExt = /\.json$/i.test(public_id);
+          // 版本化 URL：v${version}，確保拿到最新 visible
+          const dataUrl = `https://res.cloudinary.com/${cloud}/raw/upload/v${version}/${encodeURIComponent(
+            public_id + (hasExt ? '' : '.json')
+          )}`;
+
+          const resp = await fetch(dataUrl);
+          if (!resp.ok) return null;
+
+          const data = await resp.json().catch(() => null);
+          if (!data) return null;
+
+          // 決定縮圖：preview -> cover -> items[0].url
+          const previewUrl =
+            data.preview ||
+            data.cover ||
+            (Array.isArray(data.items) && data.items[0]?.url) ||
+            null;
+
+          const item = {
+            slug,
+            title: data.title || data.titile || slug,
+            date: data.date || data.created_at,
+            created_at: data.created_at,
+            tags: data.tags || [],
+            items: Array.isArray(data.items) ? data.items : [],
+            visible: data.visible !== false, // 沒寫就當 true
+            preview: previewUrl,
+          };
+
+          return item;
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    // ----------------------------
+    // STEP 4: 過濾掉抓失敗的，排序，然後依照 visible 決定要不要顯示
+    // ----------------------------
+    let items = results
+      .filter(Boolean)
+      .sort(
+        (a, b) =>
+          new Date(b.date || b.created_at || 0) -
+          new Date(a.date || a.created_at || 0)
+      );
+
+    // 如果不是管理員模式(showHidden=1 並且通過驗證)，就只回傳公開的
+    if (!allowShowHidden) {
+      items = items.filter(it => it.visible !== false);
+    }
+
+    // ----------------------------
+    // STEP 5: 回傳給前端
+    // ----------------------------
+    return sendJSON({ items });
+  } catch (e) {
+    return errorJSON(e, 500);
   }
 };

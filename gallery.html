@@ -533,7 +533,6 @@
             <input type="checkbox" id="showHiddenToggle"/>
             <span>顯示隱藏作品</span>
           </label>
-          <button type="button" class="admin-btn" id="rebuild-index-btn" title="第一次上線或舊資料未建立索引時使用">重建索引</button>
           <button type="button" class="admin-btn" id="admin-logout-btn">登出</button>
         </div>
       </div>
@@ -585,8 +584,6 @@
   const TOKEN_KEY = 'adminToken';
 
   let allItems = [];
-  let totalPages = 1;
-  let totalCount = 0;
   let currentPage = 1;
 
   // ===== Auth helpers =====
@@ -672,48 +669,13 @@
     load();
   }
 
-
-  async function rebuildIndex(){
-    const token = getToken();
-    if (!token){
-      showAlert('請先登入管理員');
-      return;
-    }
-    const ok = await showConfirm('要重建索引嗎？\n\n用途：把既有 collages/<slug>/data.json 全部掃描一次，建立 collages/index.json，讓列表載入更快、可分頁。\n\n如果作品很多，可能需要一點時間。');
-    if(!ok) return;
-
-    const resp = await fetch('/.netlify/functions/rebuild-index', {
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':'Bearer ' + token
-      },
-      body: JSON.stringify({})
-    });
-    const data = await resp.json().catch(()=>({}));
-    if(!resp.ok){
-      showAlert(data.error || '重建索引失敗');
-      return;
-    }
-    showAlert(`索引重建完成：${data.total || 0} 筆`);
-    await load();
-  }
-
   // ===== API calls =====
 
-  async function fetchList(page = 1){
+  async function fetchList(){
     const token = getToken();
     const wantHidden = !!(document.getElementById('showHiddenToggle')?.checked);
 
-    const q = document.getElementById('q')?.value?.trim() || '';
-    const sort = document.getElementById('sort')?.value || 'date_desc';
-
     const url = new URL('/.netlify/functions/list-posts', location.origin);
-    url.searchParams.set('page', String(page));
-    url.searchParams.set('pageSize', String(PAGE_SIZE));
-    if (q) url.searchParams.set('q', q);
-    if (sort) url.searchParams.set('sort', sort);
-
     if (wantHidden && token){
       url.searchParams.set('showHidden', '1');
     }
@@ -723,12 +685,13 @@
       headers['Authorization'] = 'Bearer ' + token;
     }
 
-    const resp = await fetch(url.toString(), { method:'GET', headers });
-    const data = await resp.json().catch(()=>({}));
+    const resp = await fetch(url.toString(), { headers });
     if(!resp.ok){
-      throw new Error(data.error || '載入失敗');
+      throw new Error('載入照片清單失敗 (' + resp.status + ')');
     }
-    return data;
+
+    const json = await resp.json();
+    return Array.isArray(json.items) ? json.items : [];
   }
 
   async function apiToggleVisible(slug, nextVisible){
@@ -777,9 +740,39 @@
   // ===== filter/sort/pagination =====
 
   function applyFilters(items){
-    // 列表已改為後端用 collages/index.json 做搜尋/排序/分頁，
-    // 這裡保留空函式，避免舊呼叫點出錯。
-    return items;
+    const q = document.getElementById('q').value.trim().toLowerCase();
+    const sort = document.getElementById('sort').value;
+
+    let out = items;
+    if (q){
+      out = out.filter(x=>{
+        const title = (x.title || x.slug || '').toLowerCase();
+        const tagsArr = Array.isArray(x.tags)
+          ? x.tags
+          : (typeof x.tags === 'string' ? x.tags.split(/[,，\s]+/).filter(Boolean) : []);
+        const tagsText = tagsArr.join(' ').toLowerCase();
+        return title.includes(q) || tagsText.includes(q);
+      });
+    }
+
+    out = out.slice();
+    out.sort((a,b)=>{
+      if (sort === 'date_desc'){
+        return new Date(b.date || b.created_at || 0) - new Date(a.date || a.created_at || 0);
+      }
+      if (sort === 'date_asc'){
+        return new Date(a.date || a.created_at || 0) - new Date(b.date || b.created_at || 0);
+      }
+      if (sort === 'title_asc'){
+        return String(a.title||'').localeCompare(String(b.title||''));
+      }
+      if (sort === 'title_desc'){
+        return String(b.title||'').localeCompare(String(a.title||''));
+      }
+      return 0;
+    });
+
+    return out;
   }
 
   // 切換隱藏 / 顯示
@@ -842,17 +835,8 @@
     await load();
   }
 
-  async function loadPage(page){
-    const data = await fetchList(page);
-    allItems = Array.isArray(data.items) ? data.items : [];
-    totalPages = data.totalPages || 1;
-    totalCount = data.total || allItems.length;
-    currentPage = data.page || page || 1;
-    render(allItems);
-  }
-
   function render(items){
-    document.getElementById('count').textContent = `（共 ${totalCount} 筆）`;
+    document.getElementById('count').textContent = `（共 ${items.length} 筆）`;
 
     const listEl  = document.getElementById('list');
     const emptyEl = document.getElementById('empty');
@@ -868,8 +852,10 @@
       emptyEl.hidden = true;
     }
 
-    const pageItems = items;
-    const totalPagesLocal = Math.max(1, totalPages);
+    const start = (currentPage-1) * PAGE_SIZE;
+    const pageItems = items.slice(start, start+PAGE_SIZE);
+    const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+
     for(const it of pageItems){
       const slug = it.slug;
       const detailUrl = `post.html?slug=${encodeURIComponent(slug)}`;
@@ -963,18 +949,20 @@
     // 分頁 UI
     const pager = document.getElementById('pager');
     pager.hidden = (totalPages <= 1);
-    document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPagesLocal}`;
+    document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
     document.getElementById('prev').disabled = currentPage <= 1;
-    document.getElementById('next').disabled = currentPage >= totalPagesLocal;
+    document.getElementById('next').disabled = currentPage >= totalPages;
 
-    document.getElementById('prev').onclick = async ()=>{
+    document.getElementById('prev').onclick = ()=>{
       if(currentPage>1){
-        await loadPage(currentPage-1);
+        currentPage--;
+        render(applyFilters(allItems));
       }
     };
-    document.getElementById('next').onclick = async ()=>{
-      if(currentPage<totalPagesLocal){
-        await loadPage(currentPage+1);
+    document.getElementById('next').onclick = ()=>{
+      if(currentPage<totalPages){
+        currentPage++;
+        render(applyFilters(allItems));
       }
     };
   }
@@ -984,7 +972,8 @@
   async function load(){
     try {
       currentPage = 1;
-      await loadPage(1);
+      allItems = await fetchList();
+      render(applyFilters(allItems));
     } catch(e){
       console.error(e);
       document.getElementById('list').innerHTML =
@@ -997,7 +986,7 @@
   function initEvents(){
     document.getElementById('filters').addEventListener('submit', ()=>{
       currentPage = 1;
-      loadPage(1);
+      render(applyFilters(allItems));
     });
 
     document.getElementById('admin-login-btn')
@@ -1005,9 +994,6 @@
 
     document.getElementById('admin-logout-btn')
       .addEventListener('click', adminLogout);
-
-    document.getElementById('rebuild-index-btn')
-      ?.addEventListener('click', rebuildIndex);
 
     document.getElementById('showHiddenToggle')
       .addEventListener('change', ()=>{ load(); });
@@ -1021,7 +1007,7 @@
           qInput.value = tag;
         }
         currentPage = 1;
-        loadPage(1);
+        render(applyFilters(allItems));
       });
     });
   }

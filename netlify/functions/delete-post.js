@@ -1,6 +1,6 @@
 // /.netlify/functions/delete-post.js
 import { v2 as cloudinary } from 'cloudinary';
-import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 
 cloudinary.config({
   cloud_name: process.env.CLD_CLOUD_NAME,
@@ -15,99 +15,88 @@ const CORS_HEADERS = {
   'access-control-allow-headers': 'content-type,authorization',
 };
 
-function preflight(){ return new Response(null,{status:204,headers:CORS_HEADERS}); }
-function sendJSON(obj,status=200){ return new Response(JSON.stringify(obj),{status,headers:CORS_HEADERS}); }
-
-function decodeB64Json(str){
-  const pad=str.length%4===2?'==':str.length%4===3?'=':'';
-  const s=str.replace(/-/g,'+').replace(/_/g,'/')+pad;
-  return JSON.parse(Buffer.from(s,'base64').toString('utf8'));
-}
-function verifyJWT(token, secret){
-  try{
-    const [h,p,s]=token.split('.');
-    if(!h||!p||!s) return null;
-    const data=`${h}.${p}`;
-    const sig=crypto.createHmac('sha256',secret).update(data).digest('base64')
-      .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/g,'');
-    if(sig!==s) return null;
-    const payload=decodeB64Json(p);
-    if(payload?.exp && Date.now()>=payload.exp*1000) return null;
-    return payload;
-  }catch{return null;}
-}
-function requireAdmin(request){
-  const auth=request.headers.get('authorization')||'';
-  const m=auth.match(/^Bearer\s+(.+)$/i);
-  if(!m) return null;
-  const secret=process.env.ADMIN_JWT_SECRET||'';
-  if(!secret) return null;
-  return verifyJWT(m[1].trim(), secret);
-}
-
-async function loadIndex(){
-  try{
-    const res=await cloudinary.api.resource('collages/index',{resource_type:'raw'});
-    const url=res?.secure_url||res?.url;
-    if(!url) return {items:[]};
-    const r=await fetch(url,{headers:{accept:'application/json'}});
-    if(!r.ok) return {items:[]};
-    const data=await r.json().catch(()=>null);
-    if(!data||!Array.isArray(data.items)) return {items:[]};
-    return data;
-  }catch(e){
-    if(e?.http_code===404) return {items:[]};
-    const msg=String(e?.error?.message||e?.message||'');
-    if(/not found/i.test(msg)) return {items:[]};
-    throw e;
-  }
-}
-async function saveIndex(items){
-  const payload={version:1,updated_at:new Date().toISOString(),items:Array.isArray(items)?items:[]};
-  const jsonBase64=Buffer.from(JSON.stringify(payload)).toString('base64');
-  await cloudinary.uploader.upload(`data:application/json;base64,${jsonBase64}`,{
-    resource_type:'raw', public_id:'collages/index', overwrite:true, format:'json'
+function sendJSON(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: CORS_HEADERS,
   });
 }
 
-export default async (request)=>{
-  if(request.method==='OPTIONS') return preflight();
-  if(request.method!=='POST') return sendJSON({error:'Method not allowed'},405);
+function preflight() {
+  return new Response(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
+}
 
-  const admin=requireAdmin(request);
-  if(!admin) return sendJSON({error:'Unauthorized'},401);
+// 驗證管理員 JWT
+function requireAdmin(request) {
+  const authHeader = request.headers.get('authorization') || '';
+  const m = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (!m) return null;
+  try {
+    const decoded = jwt.verify(m[1], process.env.ADMIN_JWT_SECRET);
+    if (decoded && decoded.role === 'admin') return decoded;
+  } catch (_) {}
+  return null;
+}
 
-  let body=null;
-  try{ body=await request.json(); }catch{ return sendJSON({error:'Invalid JSON body'},400); }
+export default async (request) => {
+  // CORS 預檢
+  if (request.method === 'OPTIONS') return preflight();
+  if (request.method !== 'POST') {
+    return sendJSON({ error: 'Method not allowed' }, 405);
+  }
 
-  const slug=String(body?.slug||'').trim();
-  if(!slug) return sendJSON({error:'slug required'},400);
+  // 檢查權限
+  const admin = requireAdmin(request);
+  if (!admin) {
+    return sendJSON({ error: 'Unauthorized' }, 401);
+  }
 
-  try{
-    const folderPrefix=`collages/${slug}/`;
+  // parse body
+  let body = null;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return sendJSON({ error: 'Invalid JSON body' }, 400);
+  }
 
-    const search=await cloudinary.search.expression(`public_id:${folderPrefix}*`)
-      .sort_by('created_at','desc').max_results(500).execute();
-    const resources=Array.isArray(search?.resources)? search.resources : [];
-    const publicIds=resources.map(r=>r.public_id).filter(Boolean);
+  const slug = body?.slug?.trim();
+  if (!slug) {
+    return sendJSON({ error: 'slug required' }, 400);
+  }
 
-    for(let i=0;i<publicIds.length;i+=100){
-      const batch=publicIds.slice(i,i+100);
-      await cloudinary.api.delete_resources(batch,{resource_type:'image'}).catch(()=>{});
-      await cloudinary.api.delete_resources(batch,{resource_type:'raw'}).catch(()=>{});
-      await cloudinary.api.delete_resources(batch,{resource_type:'video'}).catch(()=>{});
-    }
-    await cloudinary.api.delete_folder(folderPrefix).catch(()=>{});
+  try {
+    const folderPrefix = `collages/${slug}/`;
 
-    // 更新 index
-    const indexObj=await loadIndex();
-    const arr=Array.isArray(indexObj.items)? indexObj.items:[];
-    const next=arr.filter(x=>x&&x.slug!==slug);
-    if(next.length!==arr.length) await saveIndex(next);
+    // 1. 刪掉這個 slug 底下的「圖片 (resource_type:image)」
+    // 2. 刪掉這個 slug 底下的「raw 檔案 (data.json)」
+    // 我們用 delete_resources_by_prefix 會全清該 prefix 底下所有 public_id
+    await cloudinary.api.delete_resources_by_prefix(folderPrefix, {
+      resource_type: 'image',
+      type: 'upload',
+    });
 
-    return sendJSON({ok:true,slug},200);
-  }catch(err){
-    const msg=(err&&(err.message||err.error?.message))||String(err)||'Unknown error';
-    return sendJSON({error:msg},500);
+    await cloudinary.api.delete_resources_by_prefix(folderPrefix, {
+      resource_type: 'raw',
+      type: 'upload',
+    });
+
+    // 3. 嘗試刪掉資料夾本身
+    //   Cloudinary 的管理 API 支援 delete_folder 來清理空資料夾
+    await cloudinary.api.delete_folder(folderPrefix);
+
+    return sendJSON({ ok: true, slug });
+  } catch (err) {
+    return sendJSON(
+      {
+        error:
+          (err && (err.message || err.error?.message)) ||
+          String(err) ||
+          'Unknown error',
+      },
+      500
+    );
   }
 };
