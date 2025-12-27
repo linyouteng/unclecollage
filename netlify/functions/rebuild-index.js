@@ -1,4 +1,4 @@
-// /.netlify/functions/delete-post.js
+// /.netlify/functions/rebuild-index.js
 import { v2 as cloudinary } from 'cloudinary';
 import crypto from 'crypto';
 
@@ -45,23 +45,12 @@ function requireAdmin(request){
   return verifyJWT(m[1].trim(), secret);
 }
 
-async function loadIndex(){
-  try{
-    const res=await cloudinary.api.resource('collages/index',{resource_type:'raw'});
-    const url=res?.secure_url||res?.url;
-    if(!url) return {items:[]};
-    const r=await fetch(url,{headers:{accept:'application/json'}});
-    if(!r.ok) return {items:[]};
-    const data=await r.json().catch(()=>null);
-    if(!data||!Array.isArray(data.items)) return {items:[]};
-    return data;
-  }catch(e){
-    if(e?.http_code===404) return {items:[]};
-    const msg=String(e?.error?.message||e?.message||'');
-    if(/not found/i.test(msg)) return {items:[]};
-    throw e;
-  }
+function normalizeTags(tags){
+  if(Array.isArray(tags)) return tags.map(x=>String(x).trim()).filter(Boolean);
+  if(typeof tags==='string') return tags.split(/[,，\s]+/).map(s=>s.trim()).filter(Boolean);
+  return [];
 }
+
 async function saveIndex(items){
   const payload={version:1,updated_at:new Date().toISOString(),items:Array.isArray(items)?items:[]};
   const jsonBase64=Buffer.from(JSON.stringify(payload)).toString('base64');
@@ -77,37 +66,66 @@ export default async (request)=>{
   const admin=requireAdmin(request);
   if(!admin) return sendJSON({error:'Unauthorized'},401);
 
-  let body=null;
-  try{ body=await request.json(); }catch{ return sendJSON({error:'Invalid JSON body'},400); }
-
-  const slug=String(body?.slug||'').trim();
-  if(!slug) return sendJSON({error:'slug required'},400);
-
   try{
-    const folderPrefix=`collages/${slug}/`;
+    // 1) 搜尋所有 collages/<slug>/data(.json) raw 資源
+    let cursor = null;
+    const all = [];
+    const expr = 'resource_type:raw AND public_id:collages/*/data*';
+    let guard = 0;
 
-    const search=await cloudinary.search.expression(`public_id:${folderPrefix}*`)
-      .sort_by('created_at','desc').max_results(500).execute();
-    const resources=Array.isArray(search?.resources)? search.resources : [];
-    const publicIds=resources.map(r=>r.public_id).filter(Boolean);
+    while(true){
+      let q = cloudinary.search
+        .expression(expr)
+        .sort_by('created_at','desc')
+        .max_results(500);
+      if(cursor) q = q.next_cursor(cursor);
 
-    for(let i=0;i<publicIds.length;i+=100){
-      const batch=publicIds.slice(i,i+100);
-      await cloudinary.api.delete_resources(batch,{resource_type:'image'}).catch(()=>{});
-      await cloudinary.api.delete_resources(batch,{resource_type:'raw'}).catch(()=>{});
-      await cloudinary.api.delete_resources(batch,{resource_type:'video'}).catch(()=>{});
+      const res = await q.execute();
+      const resources = Array.isArray(res?.resources) ? res.resources : [];
+      for(const r of resources){
+        const pid = r.public_id || '';
+        const m = pid.match(/^collages\/([^\/]+)\/data(\.json)?$/i);
+        if(!m) continue;
+        all.push({ slug: m[1], url: r.secure_url || r.url });
+      }
+
+      cursor = res?.next_cursor || null;
+      guard++;
+      if(!cursor || guard>20) break; // safety
     }
-    await cloudinary.api.delete_folder(folderPrefix).catch(()=>{});
 
-    // 更新 index
-    const indexObj=await loadIndex();
-    const arr=Array.isArray(indexObj.items)? indexObj.items:[];
-    const next=arr.filter(x=>x&&x.slug!==slug);
-    if(next.length!==arr.length) await saveIndex(next);
+    // 2) 逐筆讀 data.json，生成 index entry
+    const entries = [];
+    for(const it of all){
+      if(!it.url) continue;
+      try{
+        const resp = await fetch(it.url, { headers:{ accept:'application/json' } });
+        if(!resp.ok) continue;
+        const data = await resp.json().catch(()=>null);
+        if(!data) continue;
 
-    return sendJSON({ok:true,slug},200);
+        const entry = {
+          slug: it.slug,
+          title: data.title || '',
+          date: data.date || '',
+          desc: data.desc || '',
+          tags: normalizeTags(data.tags),
+          preview: data.preview || (Array.isArray(data.items) && data.items[0] ? data.items[0].url : null),
+          visible: data.visible !== false,
+          created_at: data.created_at || null,
+          updated_at: data.updated_at || null,
+        };
+        entries.push(entry);
+      }catch(_){}
+    }
+
+    // 3) 排序 + 存回 collages/index.json
+    entries.sort((a,b)=> new Date(b.updated_at||b.created_at||0) - new Date(a.updated_at||a.created_at||0));
+    await saveIndex(entries);
+
+    return sendJSON({ ok:true, total: entries.length },200);
   }catch(err){
     const msg=(err&&(err.message||err.error?.message))||String(err)||'Unknown error';
-    return sendJSON({error:msg},500);
+    return sendJSON({ error: msg },500);
   }
 };

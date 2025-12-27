@@ -15,172 +15,115 @@ const CORS_HEADERS = {
   'access-control-allow-headers': 'content-type,authorization',
 };
 
-function sendJSON(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: CORS_HEADERS,
+function preflight(){ return new Response(null,{status:204,headers:CORS_HEADERS}); }
+function sendJSON(obj,status=200){ return new Response(JSON.stringify(obj),{status,headers:CORS_HEADERS}); }
+
+function decodeB64Json(str){
+  const pad=str.length%4===2?'==':str.length%4===3?'=':'';
+  const s=str.replace(/-/g,'+').replace(/_/g,'/')+pad;
+  return JSON.parse(Buffer.from(s,'base64').toString('utf8'));
+}
+function verifyJWT(token, secret){
+  try{
+    const [h,p,s]=token.split('.');
+    if(!h||!p||!s) return null;
+    const data=`${h}.${p}`;
+    const sig=crypto.createHmac('sha256',secret).update(data).digest('base64')
+      .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/g,'');
+    if(sig!==s) return null;
+    const payload=decodeB64Json(p);
+    if(payload?.exp && Date.now()>=payload.exp*1000) return null;
+    return payload;
+  }catch{return null;}
+}
+function requireAdmin(request){
+  const auth=request.headers.get('authorization')||'';
+  const m=auth.match(/^Bearer\s+(.+)$/i);
+  if(!m) return null;
+  const secret=process.env.ADMIN_JWT_SECRET||'';
+  if(!secret) return null;
+  return verifyJWT(m[1].trim(), secret);
+}
+
+async function loadIndex(){
+  try{
+    const res=await cloudinary.api.resource('collages/index',{resource_type:'raw'});
+    const url=res?.secure_url||res?.url;
+    if(!url) return {items:[]};
+    const r=await fetch(url,{headers:{accept:'application/json'}});
+    if(!r.ok) return {items:[]};
+    const data=await r.json().catch(()=>null);
+    if(!data||!Array.isArray(data.items)) return {items:[]};
+    return data;
+  }catch(e){
+    if(e?.http_code===404) return {items:[]};
+    const msg=String(e?.error?.message||e?.message||'');
+    if(/not found/i.test(msg)) return {items:[]};
+    throw e;
+  }
+}
+async function saveIndex(items){
+  const payload={version:1,updated_at:new Date().toISOString(),items:Array.isArray(items)?items:[]};
+  const jsonBase64=Buffer.from(JSON.stringify(payload)).toString('base64');
+  await cloudinary.uploader.upload(`data:application/json;base64,${jsonBase64}`,{
+    resource_type:'raw', public_id:'collages/index', overwrite:true, format:'json'
   });
 }
 
-function preflight() {
-  return new Response(null, { status: 204, headers: CORS_HEADERS });
-}
+export default async (request)=>{
+  if(request.method==='OPTIONS') return preflight();
+  if(request.method!=='POST') return sendJSON({error:'Method not allowed'},405);
 
-// --- 輕量版 HS256 JWT 驗證（跟我們現在的 functions 一致）---
-function decodeB64Json(str) {
-  const pad = str.length % 4 === 2 ? '==' : str.length % 4 === 3 ? '=' : '';
-  const s = str.replace(/-/g,'+').replace(/_/g,'/') + pad;
-  return JSON.parse(Buffer.from(s, 'base64').toString('utf8'));
-}
+  const admin=requireAdmin(request);
+  if(!admin) return sendJSON({error:'Unauthorized'},401);
 
-function verifyJWT(token, secret) {
-  try {
-    const [h,p,s] = token.split('.');
-    if(!h||!p||!s) return null;
+  let body=null;
+  try{ body=await request.json(); }catch{ return sendJSON({error:'Invalid JSON body'},400); }
 
-    const header = decodeB64Json(h);
-    if(header.alg !== 'HS256') return null;
+  const slug=String(body?.slug||'').trim();
+  const newVisible=(typeof body?.visible==='boolean') ? body.visible : null;
+  if(!slug) return sendJSON({error:'slug required'},400);
+  if(newVisible===null) return sendJSON({error:'visible required (boolean)'},400);
 
-    const expected = crypto.createHmac('sha256', secret)
-      .update(`${h}.${p}`)
-      .digest('base64')
-      .replace(/=/g,'')
-      .replace(/\+/g,'-')
-      .replace(/\//g,'_');
+  try{
+    // 讀 canonical data
+    const folderPrefix=`collages/${slug}/`;
+    const search=await cloudinary.search.expression(`resource_type:raw AND public_id:${folderPrefix}*`)
+      .sort_by('created_at','desc').max_results(50).execute();
+    const raws=Array.isArray(search?.resources)? search.resources: [];
+    const chosen=raws.find(r=>/\/data(\.json)?$/i.test(r.public_id)) || raws[0];
+    if(!chosen) return sendJSON({error:'data.json not found'},404);
 
-    if(expected !== s) return null;
+    const canonicalPid=chosen.public_id.replace(/\.json$/i,'');
+    const getUrl=chosen.secure_url||chosen.url;
+    if(!getUrl) return sendJSON({error:'no url for data.json'},500);
 
-    const payload = decodeB64Json(p);
-    if (payload.exp && Date.now() >= payload.exp * 1000) return null;
-    return payload;
-  } catch {
-    return null;
-  }
-}
+    const resp=await fetch(getUrl);
+    if(!resp.ok) return sendJSON({error:'cannot fetch current data.json'},500);
+    const data=await resp.json().catch(()=>null);
+    if(!data) return sendJSON({error:'bad data.json format'},500);
 
-function requireAdmin(request) {
-  const authHeader = request.headers.get('authorization') || '';
-  const m = authHeader.match(/^Bearer\s+(.+)$/i);
-  if (!m) return null;
-  const secret = process.env.ADMIN_JWT_SECRET || '';
-  if (!secret) return null;
+    data.visible=newVisible;
+    data.updated_at=new Date().toISOString();
 
-  const payload = verifyJWT(m[1], secret);
-  if (!payload) return null;
-  if (payload.role !== 'admin') return null;
-  return payload;
-}
-
-export default async (request) => {
-  if (request.method === 'OPTIONS') return preflight();
-  if (request.method !== 'POST') {
-    return sendJSON({ error: 'Method not allowed' }, 405);
-  }
-
-  // 權限檢查
-  const admin = requireAdmin(request);
-  if (!admin) {
-    return sendJSON({ error: 'Unauthorized' }, 401);
-  }
-
-  // 解析 body
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return sendJSON({ error: 'Invalid JSON body' }, 400);
-  }
-
-  const slug = body?.slug?.trim();
-  // 注意：visible 可以是 false，所以不能用簡單 truthy
-  const newVisible = body?.visible === false ? false : true;
-
-  if (!slug) {
-    return sendJSON({ error: 'slug required' }, 400);
-  }
-
-  try {
-    // 1. 找這個 slug 對應的 data 檔在 Cloudinary 裡是哪一個 public_id
-    //    我們偏好 public_id 沒 ".json" 的版本；如果同 slug 有兩個，就拿 version 最大的。
-    const res = await cloudinary.api.resources({
-      resource_type:'raw',
-      type:'upload',
-      prefix:`collages/${slug}/`,
-      max_results:10,
+    const jsonBase64=Buffer.from(JSON.stringify(data)).toString('base64');
+    await cloudinary.uploader.upload(`data:application/json;base64,${jsonBase64}`,{
+      resource_type:'raw', public_id:canonicalPid, overwrite:true, format:'json'
     });
 
-    let chosen = null;
-    for (const r of res.resources || []) {
-      const pid = r.public_id || '';
-      const m = /^collages\/[^/]+\/data(?:\.json)?$/i.exec(pid);
-      if (!m) continue;
-
-      if (!chosen) {
-        chosen = { public_id: pid, version: r.version };
-      } else {
-        // 同樣的選擇策略：prefer 沒 .json，或 version 較新
-        const curHasJson = /\.json$/i.test(chosen.public_id);
-        const newHasJson = /\.json$/i.test(pid);
-        let replace = false;
-        if (curHasJson && !newHasJson) {
-          replace = true;
-        } else if (r.version > chosen.version) {
-          replace = true;
-        }
-        if (replace) {
-          chosen = { public_id: pid, version: r.version };
-        }
-      }
+    // 同步 index
+    const indexObj=await loadIndex();
+    const arr=Array.isArray(indexObj.items)? indexObj.items.slice():[];
+    const i=arr.findIndex(x=>x&&x.slug===slug);
+    if(i>=0){
+      arr[i]={...arr[i], visible:newVisible, updated_at:data.updated_at};
+      arr.sort((a,b)=> new Date(b.updated_at||b.created_at||0) - new Date(a.updated_at||a.created_at||0));
+      await saveIndex(arr);
     }
 
-    if (!chosen) {
-      return sendJSON({ error: 'data.json not found for slug ' + slug }, 404);
-    }
-
-    // 2. 下載目前 data.json（用 versioned URL，保證拿到正確的最新內容）
-    const hasExt = /\.json$/i.test(chosen.public_id);
-    const cloud = process.env.CLD_CLOUD_NAME;
-    const getUrl = `https://res.cloudinary.com/${cloud}/raw/upload/v${chosen.version}/${encodeURIComponent(
-      chosen.public_id + (hasExt ? '' : '.json')
-    )}`;
-
-    const resp = await fetch(getUrl);
-    if (!resp.ok) {
-      return sendJSON({ error: 'cannot fetch current data.json' }, 500);
-    }
-
-    const data = await resp.json().catch(() => null);
-    if (!data) {
-      return sendJSON({ error: 'bad data.json format' }, 500);
-    }
-
-    // 3. 改 visible
-    data.visible = newVisible;
-
-    // 4. 覆蓋上傳回同一個 slug 的 canonical public_id
-    //
-    // 我們「移除 .json」再上傳，固定 public_id 為 collages/<slug>/data
-    // 這樣之後會有一個穩定版本，Cloudinary 也會 bump 版本號，list-posts.js 用 versioned URL 就會抓到最新 visible。
-    const canonicalPid = chosen.public_id.replace(/\.json$/i, '');
-    const jsonBase64 = Buffer.from(JSON.stringify(data)).toString('base64');
-
-    await cloudinary.uploader.upload(
-      `data:application/json;base64,${jsonBase64}`,
-      {
-        resource_type:'raw',
-        public_id: canonicalPid, // e.g. "collages/case-927128/data"
-        overwrite:true,
-        format:'json',
-      }
-    );
-
-    // 回傳成功
-    return sendJSON({ ok: true, slug, visible: newVisible });
-  } catch (err) {
-    const msg =
-      (err && (err.message || err.error?.message)) ||
-      String(err) ||
-      'Unknown error';
-    return sendJSON({ error: msg }, 500);
+    return sendJSON({ok:true,slug,visible:newVisible},200);
+  }catch(err){
+    const msg=(err&&(err.message||err.error?.message))||String(err)||'Unknown error';
+    return sendJSON({error:msg},500);
   }
 };
