@@ -1,6 +1,6 @@
 // /.netlify/functions/list-posts.js
 import { v2 as cloudinary } from 'cloudinary';
-import crypto from 'crypto';
+import { requireAdmin } from './_auth.js';
 
 // ---- Cloudinary 設定 ----
 cloudinary.config({
@@ -40,56 +40,6 @@ function errorJSON(err, status = 500) {
   return sendJSON({ error: msg }, status);
 }
 
-// ---- JWT 驗證，跟 update-visible.js 同一套 HS256 ----
-function decodeB64Json(str) {
-  const pad = str.length % 4 === 2 ? '==' :
-              str.length % 4 === 3 ? '='  : '';
-  const s = str.replace(/-/g,'+').replace(/_/g,'/') + pad;
-  return JSON.parse(Buffer.from(s, 'base64').toString('utf8'));
-}
-
-function verifyJWT(token, secret) {
-  try {
-    const [h,p,s] = token.split('.');
-    if (!h || !p || !s) return null;
-
-    const header = decodeB64Json(h);
-    if (header.alg !== 'HS256') return null;
-
-    const expected = crypto
-      .createHmac('sha256', secret)
-      .update(`${h}.${p}`)
-      .digest('base64')
-      .replace(/=/g,'')
-      .replace(/\+/g,'-')
-      .replace(/\//g,'_');
-
-    if (expected !== s) return null;
-
-    const payload = decodeB64Json(p);
-    // exp 是秒
-    if (payload.exp && Date.now() >= payload.exp * 1000) return null;
-
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
-function requireAdmin(request) {
-  const authHeader = request.headers.get('authorization') || '';
-  const m = authHeader.match(/^Bearer\s+(.+)$/i);
-  if (!m) return null;
-
-  const secret = process.env.ADMIN_JWT_SECRET || '';
-  if (!secret) return null;
-
-  const payload = verifyJWT(m[1], secret);
-  if (!payload) return null;
-  if (payload.role !== 'admin') return null;
-
-  return payload;
-}
 
 // ---- 主 handler ----
 export default async (request) => {

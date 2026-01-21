@@ -1,6 +1,6 @@
 // /.netlify/functions/create-post.js
 import { v2 as cloudinary } from 'cloudinary';
-import crypto from 'crypto';
+import { requireAdmin } from './_auth.js';
 
 // Cloudinary 後端認證
 cloudinary.config({
@@ -45,65 +45,6 @@ function errorJSON(err, status = 500) {
   });
 }
 
-// ---- JWT 驗證 (HS256) - 和 list-posts.js 同一套 ----
-function base64url(input) {
-  return Buffer.from(input)
-    .toString('base64')
-    .replace(/=/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
-}
-
-function b64urlJson(str) {
-  const pad =
-    str.length % 4 === 2 ? '==' : str.length % 4 === 3 ? '=' : '';
-  const s = str.replace(/-/g, '+').replace(/_/g, '/') + pad;
-  return JSON.parse(Buffer.from(s, 'base64').toString('utf8'));
-}
-
-function verifyJWT(token, secret) {
-  try {
-    const [h, p, s] = token.split('.');
-    if (!h || !p || !s) return null;
-    const header = b64urlJson(h);
-    if (header.alg !== 'HS256') return null;
-
-    const expected = crypto
-      .createHmac('sha256', secret)
-      .update(`${h}.${p}`)
-      .digest('base64')
-      .replace(/=/g, '')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_');
-
-    if (expected !== s) return null;
-
-    const payload = b64urlJson(p);
-    // 過期檢查 (exp 是秒)
-    if (payload.exp && Date.now() >= payload.exp * 1000) return null;
-
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
-function requireAdmin(request) {
-  const authHeader = request.headers.get('authorization') || '';
-  const m = authHeader.match(/^Bearer\s+(.+)$/i);
-  if (!m) return null;
-
-  const secret = process.env.ADMIN_JWT_SECRET || '';
-  if (!secret) return null;
-
-  const payload = verifyJWT(m[1], secret);
-  if (!payload) return null;
-  if (payload.role !== 'admin') return null;
-
-  return payload;
-}
-
-// ---- Handler ----
 export default async (request) => {
   // CORS 預檢
   if (request.method === 'OPTIONS') return preflight();

@@ -29,25 +29,40 @@ export default async (request) => {
     return sendJSON({ error: 'Method not allowed' }, 405);
   }
 
-  // 讀 body.password
+  // 讀 body.password / body.remember
   let body = null;
   try {
     body = await request.json();
   } catch (_) {}
 
   const password = body?.password || '';
+  const remember = Boolean(body?.remember);
 
   // 比對環境變數
   if (!password || password !== process.env.ADMIN_PASSWORD) {
     return sendJSON({ error: 'Unauthorized' }, 401);
   }
 
-  // 簽一顆 JWT，12 小時過期
+  const secret = process.env.ADMIN_JWT_SECRET || '';
+  if (!secret) {
+    return sendJSON({ error: 'Server not configured' }, 500);
+  }
+
+  // token 壽命：remember=30 天，否則 2 小時
+  const expiresIn = remember ? '30d' : '2h';
+
   const token = jwt.sign(
     { role: 'admin' },
-    process.env.ADMIN_JWT_SECRET,
-    { expiresIn: '12h' } // 例如 12 小時有效
+    secret,
+    { expiresIn }
   );
 
-  return sendJSON({ token });
+  // 方便前端顯示/判斷的 expiresAt（毫秒）
+  let expiresAt = null;
+  try {
+    const decoded = jwt.decode(token);
+    if (decoded?.exp) expiresAt = decoded.exp * 1000;
+  } catch {}
+
+  return sendJSON({ token, expiresAt });
 };

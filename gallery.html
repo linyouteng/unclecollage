@@ -525,6 +525,10 @@
       <div class="admin-panel">
         <div id="admin-logged-out" class="admin-row">
           <input type="password" id="admin-pass" placeholder="管理密碼" />
+          <label style="display:flex;align-items:center;gap:4px;">
+            <input id="admin-remember" type="checkbox" />
+            <span>已儲存</span>
+          </label>
           <button type="button" class="admin-btn" id="admin-login-btn">登入</button>
         </div>
 
@@ -581,20 +585,28 @@
 <script>
 (function(){
   const PAGE_SIZE = 6;
-  const TOKEN_KEY = 'adminToken';
-
-  let allItems = [];
-  let currentPage = 1;
+  const TOKEN_KEY_LOCAL = 'adminToken';
+  const TOKEN_KEY_SESSION = 'adminTokenSession';
 
   // ===== Auth helpers =====
   function getToken(){
-    try { return localStorage.getItem(TOKEN_KEY) || ''; } catch(_) { return ''; }
+    try { return sessionStorage.getItem(TOKEN_KEY_SESSION) || localStorage.getItem(TOKEN_KEY_LOCAL) || ''; }
+    catch(_) { return ''; }
   }
-  function setToken(t){
-    try { if (t){ localStorage.setItem(TOKEN_KEY,t); } } catch(_){}
+  function setToken(t, remember){
+    try {
+      if (!t) return;
+      if (remember){ localStorage.setItem(TOKEN_KEY_LOCAL,t); sessionStorage.removeItem(TOKEN_KEY_SESSION); }
+      else { sessionStorage.setItem(TOKEN_KEY_SESSION,t); localStorage.removeItem(TOKEN_KEY_LOCAL); }
+    } catch(_){ }
   }
   function clearToken(){
-    try { localStorage.removeItem(TOKEN_KEY); } catch(_){}
+    try { localStorage.removeItem(TOKEN_KEY_LOCAL); } catch(_){ }
+    try { sessionStorage.removeItem(TOKEN_KEY_SESSION); } catch(_){ }
+  }
+  function hasRememberedToken(){
+    try { return !!localStorage.getItem(TOKEN_KEY_LOCAL); } catch(_){ return false; }
+  }
   }
   function isLoggedIn(){
     return !!getToken();
@@ -626,6 +638,9 @@
 
 
   function refreshAdminUI(){
+    const cb = document.getElementById('admin-remember');
+    if(cb){ cb.checked = hasRememberedToken(); }
+
     const loggedOut = document.getElementById('admin-logged-out');
     const loggedIn  = document.getElementById('admin-logged-in');
     if (isLoggedIn()){
@@ -650,14 +665,14 @@
     const r = await fetch('/.netlify/functions/admin-login', {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ password })
+      body: JSON.stringify({ password, remember: document.getElementById('admin-remember')?.checked === true })
     });
     const data = await r.json().catch(()=>({}));
     if(!r.ok || !data.token){
       showAlert(data.error || '登入失敗');
       return;
     }
-    setToken(data.token);
+    setToken(data.token, document.getElementById('admin-remember')?.checked === true);
     pwInput.value = '';
     refreshAdminUI();
     await load();

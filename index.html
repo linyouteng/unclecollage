@@ -124,6 +124,10 @@
       <div class="flex items-center gap-2" id="admin-panel">
       <div id="admin-logged-out" class="flex items-center gap-2">
         <input id="admin-pass" type="password" class="input w-36" placeholder="管理密碼"/>
+        <label class="flex items-center gap-1 text-xs text-slate-500 select-none">
+          <input id="admin-remember" type="checkbox" class="accent-slate-700"/>
+          <span>已儲存</span>
+        </label>
         <button id="admin-login-btn" type="button" class="btn btn-ghost">登入</button>
       </div>
       <div id="admin-logged-in" class="hidden items-center gap-2">
@@ -321,10 +325,27 @@
     const lightboxUrl = (u)=> transform(u, 'f_auto,q_auto,c_limit,w_1600');
 
     /* ====== 管理員登入工具（新增） ====== */
-    const TOKEN_KEY = 'adminToken'; // 與 gallery 使用相同 key
-    function getToken(){ try{ return localStorage.getItem(TOKEN_KEY) || ''; }catch{ return ''; } }
-    function setToken(t){ try{ if(t) localStorage.setItem(TOKEN_KEY,t); }catch{} }
-    function clearToken(){ try{ localStorage.removeItem(TOKEN_KEY); }catch{} }
+    const TOKEN_KEY_LOCAL = 'adminToken';
+    const TOKEN_KEY_SESSION = 'adminTokenSession';
+    function getToken(){
+      try{ return sessionStorage.getItem(TOKEN_KEY_SESSION) || localStorage.getItem(TOKEN_KEY_LOCAL) || ''; }
+      catch{ return ''; }
+    }
+    function setToken(t, remember){
+      try{
+        if(!t) return;
+        if(remember){ localStorage.setItem(TOKEN_KEY_LOCAL, t); sessionStorage.removeItem(TOKEN_KEY_SESSION); }
+        else { sessionStorage.setItem(TOKEN_KEY_SESSION, t); localStorage.removeItem(TOKEN_KEY_LOCAL); }
+      }catch{}
+    }
+    function clearToken(){
+      try{ localStorage.removeItem(TOKEN_KEY_LOCAL); }catch{}
+      try{ sessionStorage.removeItem(TOKEN_KEY_SESSION); }catch{}
+    }
+    function hasRememberedToken(){
+      try{ return !!localStorage.getItem(TOKEN_KEY_LOCAL); }catch{ return false; }
+    }
+catch{} }
    
     // 案件說明常用範例快速插入
     const descTemplates = {
@@ -352,6 +373,9 @@
     function refreshAdminUI(){
       const out = $('#admin-logged-out');
       const inn = $('#admin-logged-in');
+      const cb = $('#admin-remember');
+      if(cb){ cb.checked = hasRememberedToken(); }
+
       if (isLoggedIn()){ out.classList.add('hidden'); inn.classList.remove('hidden'); }
       else { inn.classList.add('hidden'); out.classList.remove('hidden'); }
     }
@@ -360,11 +384,11 @@
       const pw = $('#admin-pass').value.trim();
       if(!pw){ showAlert('請輸入管理密碼'); return; }
       const r = await fetch('/.netlify/functions/admin-login',{
-        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pw })
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pw, remember: $('#admin-remember')?.checked === true })
       });
       const data = await r.json().catch(()=>({}));
       if(!r.ok || !data.token){ showAlert(data.error || '登入失敗'); return; }
-      setToken(data.token);
+      setToken(data.token, $('#admin-remember')?.checked === true);
       $('#admin-pass').value = '';
       refreshAdminUI();
     }

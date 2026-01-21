@@ -1,6 +1,6 @@
 // /.netlify/functions/delete-post.js
 import { v2 as cloudinary } from 'cloudinary';
-import jwt from 'jsonwebtoken';
+import { requireAdmin } from './_auth.js';
 
 cloudinary.config({
   cloud_name: process.env.CLD_CLOUD_NAME,
@@ -30,16 +30,6 @@ function preflight() {
 }
 
 // 驗證管理員 JWT
-function requireAdmin(request) {
-  const authHeader = request.headers.get('authorization') || '';
-  const m = authHeader.match(/^Bearer\s+(.+)$/i);
-  if (!m) return null;
-  try {
-    const decoded = jwt.verify(m[1], process.env.ADMIN_JWT_SECRET);
-    if (decoded && decoded.role === 'admin') return decoded;
-  } catch (_) {}
-  return null;
-}
 
 export default async (request) => {
   // CORS 預檢
