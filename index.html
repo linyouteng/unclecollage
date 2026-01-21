@@ -122,13 +122,15 @@
 
       <!-- ▶︎▶︎ 管理員登入面板（新增） ◀︎◀︎ -->
       <div class="flex items-center gap-2" id="admin-panel">
-      <div id="admin-logged-out" class="flex items-center gap-2">
-        <input id="admin-pass" type="password" class="input w-36" placeholder="管理密碼"/>
-        <label class="flex items-center gap-1 text-xs text-slate-500 select-none">
-          <input id="admin-remember" type="checkbox" class="accent-slate-700"/>
-          <span>已儲存</span>
+      <div id="admin-logged-out" class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <input id="admin-pass" type="password" class="input w-36" placeholder="管理密碼"/>
+          <button id="admin-login-btn" type="button" class="btn btn-ghost">登入</button>
+        </div>
+        <label class="flex items-center gap-2 text-sm text-slate-600 select-none">
+          <input type="checkbox" id="remember-admin-pass" />
+          <span>已儲存（記住密碼）</span>
         </label>
-        <button id="admin-login-btn" type="button" class="btn btn-ghost">登入</button>
       </div>
       <div id="admin-logged-in" class="hidden items-center gap-2">
         <span class="text-sm px-2 py-1 rounded bg-green-100 text-green-700">已登入</span>
@@ -325,27 +327,10 @@
     const lightboxUrl = (u)=> transform(u, 'f_auto,q_auto,c_limit,w_1600');
 
     /* ====== 管理員登入工具（新增） ====== */
-    const TOKEN_KEY_LOCAL = 'adminToken';
-    const TOKEN_KEY_SESSION = 'adminTokenSession';
-    function getToken(){
-      try{ return sessionStorage.getItem(TOKEN_KEY_SESSION) || localStorage.getItem(TOKEN_KEY_LOCAL) || ''; }
-      catch{ return ''; }
-    }
-    function setToken(t, remember){
-      try{
-        if(!t) return;
-        if(remember){ localStorage.setItem(TOKEN_KEY_LOCAL, t); sessionStorage.removeItem(TOKEN_KEY_SESSION); }
-        else { sessionStorage.setItem(TOKEN_KEY_SESSION, t); localStorage.removeItem(TOKEN_KEY_LOCAL); }
-      }catch{}
-    }
-    function clearToken(){
-      try{ localStorage.removeItem(TOKEN_KEY_LOCAL); }catch{}
-      try{ sessionStorage.removeItem(TOKEN_KEY_SESSION); }catch{}
-    }
-    function hasRememberedToken(){
-      try{ return !!localStorage.getItem(TOKEN_KEY_LOCAL); }catch{ return false; }
-    }
-catch{} }
+    const TOKEN_KEY = 'adminToken'; // 與 gallery 使用相同 key
+    function getToken(){ try{ return localStorage.getItem(TOKEN_KEY) || ''; }catch{ return ''; } }
+    function setToken(t){ try{ if(t) localStorage.setItem(TOKEN_KEY,t); }catch{} }
+    function clearToken(){ try{ localStorage.removeItem(TOKEN_KEY); }catch{} }
    
     // 案件說明常用範例快速插入
     const descTemplates = {
@@ -373,9 +358,6 @@ catch{} }
     function refreshAdminUI(){
       const out = $('#admin-logged-out');
       const inn = $('#admin-logged-in');
-      const cb = $('#admin-remember');
-      if(cb){ cb.checked = hasRememberedToken(); }
-
       if (isLoggedIn()){ out.classList.add('hidden'); inn.classList.remove('hidden'); }
       else { inn.classList.add('hidden'); out.classList.remove('hidden'); }
     }
@@ -384,15 +366,54 @@ catch{} }
       const pw = $('#admin-pass').value.trim();
       if(!pw){ showAlert('請輸入管理密碼'); return; }
       const r = await fetch('/.netlify/functions/admin-login',{
-        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pw, remember: $('#admin-remember')?.checked === true })
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pw })
       });
       const data = await r.json().catch(()=>({}));
       if(!r.ok || !data.token){ showAlert(data.error || '登入失敗'); return; }
-      setToken(data.token, $('#admin-remember')?.checked === true);
+      setToken(data.token);
+
+      // 記住密碼（儲存在本機裝置的瀏覽器）
+      const remember = document.getElementById('remember-admin-pass')?.checked;
+      if(remember){
+        localStorage.setItem(ADMIN_PASS_STORAGE_KEY, pw);
+        localStorage.setItem(ADMIN_REMEMBER_STORAGE_KEY, 'true');
+      } else {
+        localStorage.removeItem(ADMIN_PASS_STORAGE_KEY);
+        localStorage.setItem(ADMIN_REMEMBER_STORAGE_KEY, 'false');
+      }
+
       $('#admin-pass').value = '';
       refreshAdminUI();
     }
     function adminLogout(){ clearToken(); refreshAdminUI(); }
+
+
+    /* ====== 記住管理員密碼（儲存在使用裝置的瀏覽器） ====== */
+    const ADMIN_PASS_STORAGE_KEY = 'admin_saved_password';
+    const ADMIN_REMEMBER_STORAGE_KEY = 'admin_remember_password';
+    const adminPassInput = document.getElementById('admin-pass');
+    const rememberCheckbox = document.getElementById('remember-admin-pass');
+
+    (function initRememberPassword(){
+      if(!adminPassInput || !rememberCheckbox) return;
+      const remember = localStorage.getItem(ADMIN_REMEMBER_STORAGE_KEY) === 'true';
+      const savedPass = localStorage.getItem(ADMIN_PASS_STORAGE_KEY);
+      if(remember && savedPass){
+        adminPassInput.value = savedPass;
+        rememberCheckbox.checked = true;
+      } else {
+        rememberCheckbox.checked = false;
+      }
+    })();
+
+    rememberCheckbox?.addEventListener('change', ()=>{
+      if(!rememberCheckbox.checked){
+        localStorage.removeItem(ADMIN_PASS_STORAGE_KEY);
+        localStorage.setItem(ADMIN_REMEMBER_STORAGE_KEY, 'false');
+      } else {
+        localStorage.setItem(ADMIN_REMEMBER_STORAGE_KEY, 'true');
+      }
+    });
 
     // 綁定登入面板
     $('#admin-login-btn')?.addEventListener('click', adminLogin);
