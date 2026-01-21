@@ -526,7 +526,12 @@
         <div id="admin-logged-out" class="admin-row">
           <input type="password" id="admin-pass" placeholder="管理密碼" />
           <button type="button" class="admin-btn" id="admin-login-btn">登入</button>
-        </div>
+        
+          <label class="remember-wrap" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--fg);margin-top:6px;user-select:none;">
+            <input type="checkbox" id="remember-admin-pass" />
+            <span>已儲存（記住密碼）</span>
+          </label>
+</div>
 
         <div id="admin-logged-in" class="admin-row hidden">
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--fg);">
@@ -583,6 +588,8 @@
   const PAGE_SIZE = 6;
   const TOKEN_KEY = 'adminToken';
 
+  const ADMIN_PASS_STORAGE_KEY = 'admin_saved_password';
+  const ADMIN_REMEMBER_STORAGE_KEY = 'admin_remember_password';
   let allItems = [];
   let currentPage = 1;
 
@@ -598,6 +605,33 @@
   }
   function isLoggedIn(){
     return !!getToken();
+  }
+
+
+  // ===== Remember password (local device storage) =====
+  function initRememberPassword(){
+    const pwInput = document.getElementById('admin-pass');
+    const rememberCb = document.getElementById('remember-admin-pass');
+    if (!pwInput || !rememberCb) return;
+
+    const remember = (localStorage.getItem(ADMIN_REMEMBER_STORAGE_KEY) === 'true');
+    const savedPass = localStorage.getItem(ADMIN_PASS_STORAGE_KEY);
+
+    if (remember && savedPass){
+      pwInput.value = savedPass;
+      rememberCb.checked = true;
+    } else {
+      rememberCb.checked = false;
+    }
+
+    rememberCb.addEventListener('change', ()=>{
+      if (!rememberCb.checked){
+        localStorage.removeItem(ADMIN_PASS_STORAGE_KEY);
+        localStorage.setItem(ADMIN_REMEMBER_STORAGE_KEY, 'false');
+      } else {
+        localStorage.setItem(ADMIN_REMEMBER_STORAGE_KEY, 'true');
+      }
+    });
   }
 
 
@@ -658,6 +692,20 @@
       return;
     }
     setToken(data.token);
+
+    // Persist password only on successful login if user opted in
+    const rememberCb = document.getElementById('remember-admin-pass');
+    if (rememberCb?.checked){
+      try {
+        localStorage.setItem(ADMIN_PASS_STORAGE_KEY, password);
+        localStorage.setItem(ADMIN_REMEMBER_STORAGE_KEY, 'true');
+      } catch(_){ /* ignore */ }
+    } else {
+      try {
+        localStorage.removeItem(ADMIN_PASS_STORAGE_KEY);
+        localStorage.setItem(ADMIN_REMEMBER_STORAGE_KEY, 'false');
+      } catch(_){ /* ignore */ }
+    }
     pwInput.value = '';
     refreshAdminUI();
     await load();
@@ -1013,6 +1061,7 @@
   }
 
   function init(){
+    initRememberPassword();
     refreshAdminUI();
     initEvents();
     load();
