@@ -8,8 +8,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#0f172a" />
-  <meta name="description" content="自然大叔清洗案例總覽，包含冷氣、水塔、洗衣機等案例照片。" />
-  <title>案例總覽｜自然大叔</title>
+  <meta name="description" content="自然大叔清洗案例見證，包含冷氣、洗衣機、水塔、自來水管清洗前後照片紀錄。" />
+  <title>自然大叔｜清洗案例見證</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -71,6 +71,71 @@
       border-radius:8px;
       border:1px solid var(--border);
       background:#fff;
+    }
+
+    .brand-links{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:6px;
+      font-size:13px;
+    }
+    .brand-links a{
+      padding:6px 10px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      background:#fff;
+      color:#374151;
+      text-decoration:none;
+      line-height:1.1;
+    }
+    .brand-links a:hover{ background:#f3f4f6; }
+    .brand-links .primary-link{
+      background:var(--brand);
+      border-color:var(--brand);
+      color:#fff;
+      font-weight:700;
+    }
+    .case-hero{
+      margin:22px 0 18px;
+      padding:22px;
+      border:1px solid rgba(148,163,184,.35);
+      border-radius:20px;
+      background:linear-gradient(135deg,#ffffff,#f3f4f6);
+      box-shadow:0 16px 40px rgba(15,23,42,.08);
+    }
+    .case-hero h1{
+      margin:0 0 8px;
+      font-size:clamp(24px,4vw,36px);
+      letter-spacing:.02em;
+    }
+    .case-hero p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.7;
+      max-width:760px;
+    }
+    .case-hero-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:16px;
+    }
+    .case-hero-actions a{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:10px 14px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#fff;
+      font-weight:700;
+      text-decoration:none;
+    }
+    .case-hero-actions .primary{
+      background:var(--brand);
+      border-color:var(--brand);
+      color:#fff;
     }
     form#filters{
       display:flex;
@@ -501,12 +566,19 @@
 <header>
   <div class="container">
     <div class="navrow">
-      <div class="brand">
-        <img src="logo2.png" alt="logo2"/>
-        <div>自然大叔｜照片清單</div>
-      </div>
+      <a class="brand" href="https://natural-uncle-official.netlify.app" target="_blank" rel="noopener">
+        <img src="logo2.png" alt="自然大叔 Natural Uncle"/>
+        <div>自然大叔｜案例見證</div>
+      </a>
 
-      <form id="filters" onsubmit="event.preventDefault(); load();">
+      <nav class="brand-links" aria-label="官方網站導覽">
+        <a href="https://natural-uncle-official.netlify.app" target="_blank" rel="noopener">官方網站</a>
+        <a href="https://natural-uncle-official.netlify.app#services" target="_blank" rel="noopener">服務項目</a>
+        <a href="https://natural-uncle-official.netlify.app#pricing" target="_blank" rel="noopener">價格方案</a>
+        <a class="primary-link" href="https://line.me/R/ti/p/%40uncle888" target="_blank" rel="noopener">LINE 預約</a>
+      </nav>
+
+      <form id="filters">
         <input id="q" type="search" placeholder="搜尋標題或標籤…" />
         <select id="sort">
           <option value="date_desc">最新優先</option>
@@ -546,7 +618,16 @@
 </header>
 
 <main class="container">
-  <h1>照片清單</h1><span id="count"></span>
+  <section class="case-hero">
+    <h1>自然大叔｜清洗案例見證</h1>
+    <p>冷氣、洗衣機、水塔、自來水管清洗前後紀錄。每一次施工都有清楚照片交付，方便屋主留存，也能作為日後保養參考。</p>
+    <div class="case-hero-actions">
+      <a class="primary" href="https://line.me/R/ti/p/%40uncle888" target="_blank" rel="noopener">LINE 預約／詢價</a>
+      <a href="https://natural-uncle-official.netlify.app" target="_blank" rel="noopener">查看官方網站</a>
+      <a href="https://uncle-reservation-platform.netlify.app" target="_blank" rel="noopener">立即線上預約</a>
+    </div>
+  </section>
+  <h2 style="margin:0 0 12px;font-size:22px;">全部案例 <span id="count"></span></h2>
 
   <div id="list" aria-live="polite"></div>
 
@@ -975,6 +1056,13 @@
         const ctrl = document.createElement('div');
         ctrl.className = 'admin-controls';
 
+        const editBtn = document.createElement('button');
+        editBtn.textContent = '編輯';
+        editBtn.addEventListener('click', ()=>{
+          location.href = 'index.html#/edit/' + encodeURIComponent(slug);
+        });
+        ctrl.appendChild(editBtn);
+
         const toggleBtn = document.createElement('button');
         toggleBtn.textContent = (it.visible === false) ? '取消隱藏' : '隱藏';
         toggleBtn.addEventListener('click', ()=>{
@@ -1032,7 +1120,8 @@
   }
 
   function initEvents(){
-    document.getElementById('filters').addEventListener('submit', ()=>{
+    document.getElementById('filters').addEventListener('submit', (event)=>{
+      event.preventDefault();
       currentPage = 1;
       render(applyFilters(allItems));
     });

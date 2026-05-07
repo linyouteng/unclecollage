@@ -23,11 +23,22 @@
   .input { width:100%; border-radius:0.75rem; border:1px solid rgba(100,116,139,.6); padding:0.75rem 1rem; background:rgba(255,255,255,.75); }
   .card { border:1px solid rgba(100,116,139,.3); background:rgba(255,255,255,.75); border-radius:1.25rem; box-shadow:0 6px 24px rgba(15,23,42,.06); }
   .row { display:flex; gap:12px; align-items:center; padding:12px; border:1px dashed rgba(100,116,139,.35); border-radius:1rem; background:rgba(255,255,255,.6); position:relative; }
+.group-card { border:1px solid rgba(14,165,233,.25); background:rgba(240,249,255,.55); border-radius:1.25rem; padding:14px; }
+.group-head { display:flex; gap:10px; align-items:flex-start; justify-content:space-between; margin-bottom:12px; }
+.group-title { font-weight:800; color:#0f172a; }
+.group-sub { font-size:12px; color:#64748b; margin-top:2px; }
+.group-items { display:flex; flex-direction:column; gap:10px; }
+.group-tools { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
   .handle { cursor:grab; padding:6px 8px; border-radius:10px; background:#e2e8f0; color:#334155; user-select:none; touch-action:none; }
   .thumb { width:80px; height:80px; border-radius:12px; overflow:hidden; background:#e2e8f0; flex:none; display:flex; align-items:center; justify-content:center; font-size:12px; color:#64748b; }
   .progress { height:8px; background:rgba(148,163,184,.35); border-radius:9999px; overflow:hidden; }
   .bar { height:100%; width:0; background:#0f172a; transition:width .25s ease; }
   .chip { font-size:12px; padding:4px 10px; border-radius:9999px; background:#f1f5f9; color:#334155; }
+  .upload-note { font-size:12px; color:#64748b; line-height:1.45; }
+  .upload-status { font-size:12px; color:#475569; min-height:1.25rem; }
+  .upload-status.ok { color:#047857; }
+  .upload-status.warn { color:#b45309; }
+  .upload-status.error { color:#b91c1c; }
 
   /* Lightbox */
   .lightbox { position:fixed; inset:0; background:rgba(0,0,0,.9); display:none; align-items:center; justify-content:center; z-index:60; padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 72px); }
@@ -50,6 +61,14 @@
   }
   .btn-desc-template:hover {
     background:#e2e8f0;
+  }
+  .btn-desc-template-manage {
+    border-style:solid;
+    background:#0f172a;
+    color:#fff;
+  }
+  .desc-template-panel textarea {
+    min-height:120px;
   }
 
   @media (max-width: 640px){
@@ -144,7 +163,7 @@
 
 <main class="max-w-3xl mx-auto px-4 py-6">
   <section id="editor" class="card p-5">
-    <h1 class="text-xl font-bold mb-4">建立分享</h1>
+    <h1 id="editor-title" class="text-xl font-bold mb-4">建立分享</h1>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div><label class="block text-sm mb-1 text-slate-600">案件/地點</label><input id="title" class="input" placeholder="例如：台北王小姐"/></div>
@@ -156,24 +175,57 @@
       <textarea id="desc" class="input" rows="4" placeholder="例：頂樓水塔多年未清洗，本次重點是除泥沙與消毒…"></textarea>
       <div class="mt-2 flex flex-wrap items-center gap-1 text-[11px] text-slate-500">
         <span class="mr-1">快速插入常用說明：</span>
-        <button type="button" class="btn-desc-template" data-template="ac-basic">冷氣清洗（住家）</button>
-        <button type="button" class="btn-desc-template" data-template="washer-basic">直立式洗衣機清洗（住家）</button>
-        <button type="button" class="btn-desc-template" data-template="tank-basic">水塔清洗</button>
-        <button type="button" class="btn-desc-template" data-template="ac-heavy">冷氣清洗（多年未保養）</button>
+        <div id="desc-template-list" class="flex flex-wrap items-center gap-1"></div>
+        <button type="button" id="manage-desc-templates" class="btn-desc-template btn-desc-template-manage">管理範本</button>
+      </div>
+      <div id="desc-template-panel" class="desc-template-panel hidden mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <div>
+            <div class="text-sm font-bold text-slate-800">常用說明範本管理</div>
+            <div class="text-xs text-slate-500">可修改既有範本，也可以新增自己的固定文案；資料會存在目前這台裝置的瀏覽器。</div>
+          </div>
+          <button type="button" id="close-desc-template-panel" class="btn btn-ghost tap px-3 py-1.5 text-xs">關閉</button>
+        </div>
+        <div class="grid gap-2">
+          <div>
+            <label class="block text-xs mb-1 text-slate-600">選擇要修改的範本</label>
+            <select id="desc-template-select" class="input py-2 text-sm"></select>
+          </div>
+          <div>
+            <label class="block text-xs mb-1 text-slate-600">範本名稱</label>
+            <input id="desc-template-name" class="input py-2 text-sm" placeholder="例如：冷氣清洗（住家）" />
+          </div>
+          <div>
+            <label class="block text-xs mb-1 text-slate-600">範本文案</label>
+            <textarea id="desc-template-content" class="input text-sm" rows="5" placeholder="輸入會快速插入案件說明的固定文案"></textarea>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" id="save-desc-template" class="btn btn-primary tap px-3 py-2 text-sm">儲存目前範本</button>
+            <button type="button" id="add-desc-template" class="btn btn-ghost tap px-3 py-2 text-sm">新增為新範本</button>
+            <button type="button" id="delete-desc-template" class="btn btn-ghost tap px-3 py-2 text-sm">刪除範本</button>
+            <button type="button" id="reset-desc-templates" class="btn btn-ghost tap px-3 py-2 text-sm">還原預設範本</button>
+          </div>
+          <div class="mt-2 rounded-xl border border-dashed border-slate-300 bg-white/70 p-3">
+            <div class="text-xs font-bold text-slate-700 mb-1">範本備份 / 還原</div>
+            <div class="text-[11px] text-slate-500 mb-2">可將目前範本下載成 JSON 備份；換新裝置後再匯入還原。第一版匯入會覆蓋目前範本。</div>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" id="export-desc-templates" class="btn btn-ghost tap px-3 py-2 text-sm">下載備份</button>
+              <button type="button" id="import-desc-templates-btn" class="btn btn-ghost tap px-3 py-2 text-sm">匯入還原</button>
+              <input id="import-desc-templates-file" type="file" accept="application/json,.json" class="hidden" />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="mt-4">
-      <label class="block text-sm mb-2 text-slate-600">照片清單（可拖曳排序）</label>
-      <div id="items" class="space-y-3"></div>
+      <label class="block text-sm mb-2 text-slate-600">設備/區域群組照片</label>
+      <p class="text-xs text-slate-500 mb-3">先建立一台冷氣、洗衣機或水塔群組，只要在群組填一次樓層、所在類型、清洗類別與說明，該群組內照片會共用這些資訊；照片也可以另外補單張說明。</p>
+      <div id="items" class="space-y-4"></div>
       <div class="flex flex-wrap gap-2 mt-2">
-        <button id="addItem" class="btn btn-ghost tap">＋ 新增一張</button>
-        <label class="btn btn-ghost tap cursor-pointer">
-          相簿選取多張
-          <input id="multiPick" type="file" multiple accept="image/*" class="hidden"/>
-        </label>
+        <button id="addGroup" class="btn btn-ghost tap">＋ 新增一個設備/區域</button>
       </div>
-      <p class="text-xs text-slate-500 mt-2">支援 JPG/PNG，單檔 ≤ 10MB。拖曳左側「⋮⋮」手把調整順序。</p>
+      <p class="text-xs text-slate-500 mt-2">支援 JPG/PNG/WebP。原圖單檔 ≤ 30MB，送出時會自動壓縮至長邊 1920px 以內並重試上傳。每個群組內可拖曳左側「⋮⋮」手把調整照片順序。</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -188,6 +240,7 @@
 
     <div class="mt-5 flex items-center gap-3">
       <button id="upload" class="btn btn-primary tap">上傳全部並產生連結</button>
+      <a id="cancel-edit" href="gallery.html" class="btn btn-ghost tap hidden">取消編輯</a>
       <div class="grow progress"><div id="bar" class="bar"></div></div>
       <span id="progress" class="text-sm text-slate-600 min-w-[5rem]"></span>
     </div>
@@ -263,13 +316,21 @@
   document.addEventListener('DOMContentLoaded', () => {
     const CLOUD_NAME="dvz4druzc";
     const UPLOAD_PRESET="uncle-collage";
-    const MAX_MB=10;
+    const MAX_MB=10; // Cloudinary 最終上傳檔案建議上限
+    const SOURCE_MAX_MB=30; // 原圖可先選較大檔，再由前端壓縮
+    const MAX_IMAGE_EDGE=1920;
+    const IMAGE_QUALITY=0.82;
+    const UPLOAD_RETRY_LIMIT=2;
 
     const $=(s,r=document)=>r.querySelector(s);
     const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
     const setProgress=m=>$('#progress').textContent=m||'';
     const setBar=p=>$('#bar').style.width=Math.max(0,Math.min(100,p))+'%';
+    const fileSizeMB=file=>file ? (file.size/1024/1024).toFixed(2) : '0.00';
+    const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     const slugify=s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+    let editingSlug = null;
+    let editingRecord = null;
     function showCopyToast(msg = '已複製連結！') {
       const el = $('#copy-toast');
       if (!el) return;
@@ -332,26 +393,268 @@
     function setToken(t){ try{ if(t) localStorage.setItem(TOKEN_KEY,t); }catch{} }
     function clearToken(){ try{ localStorage.removeItem(TOKEN_KEY); }catch{} }
    
-    // 案件說明常用範例快速插入
-    const descTemplates = {
-      'ac-basic': '住家分離式冷氣長期使用後，濾網與風鼓累積大量灰塵與霉菌，出風口有明顯黑垢與異味。本次針對室內機做清洗保養，包含濾網、風鼓、排水盤與外殼，高壓沖洗後恢復冷房效率並減少異味。',
-      'ac-heavy': '客戶長期未保養冷氣，鰭片與風鼓附著厚重灰塵，冷房效果明顯變差且用電量偏高。本次室內機清洗保養，先以環保藥劑溶解油污，再搭配高壓沖洗與排水管疏通，明顯改善冷房效率與風量。',
-      'washer-basic': '直立式洗衣機長期使用後，內槽與外槽間累積大量污泥、棉絮與黑色黴斑，洗完衣物容易殘留異味。本次分解內桶，徹底清洗內外槽、脫水槽與排水孔，搭配高壓沖洗處理，恢復洗衣槽乾淨。',
-      'tank-basic': '頂樓水塔多年未清洗，底部沉積泥沙與鐵鏽，內壁附著水垢，影響用水品質。本次先將水塔內水位放水，人工刷洗內壁與底部沉積物，最後再以清水多次沖洗，最後確保出水清澈。'
-    };
-    function initDescTemplateButtons(){
-      const textarea = document.getElementById('desc');
-      if (!textarea) return;
-      document.querySelectorAll('.btn-desc-template').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const key = btn.dataset.template;
-          const tpl = descTemplates[key];
-          if (!tpl) return;
-          const current = textarea.value.trim();
-          textarea.value = current ? (textarea.value.replace(/\s*$/, '') + '\n\n' + tpl) : tpl;
-          textarea.focus();
-        });
+    // 案件說明常用範例快速插入：可編輯 / 可新增範本
+    const DESC_TEMPLATE_STORAGE_KEY = 'uncle_desc_templates_v1';
+    const DEFAULT_DESC_TEMPLATES = [
+      {
+        id: 'ac-basic',
+        name: '冷氣清洗（住家）',
+        content: '住家分離式冷氣長期使用後，濾網與風鼓累積大量灰塵與霉菌，出風口有明顯黑垢與異味。本次針對室內機做清洗保養，包含濾網、風鼓、排水盤與外殼，高壓沖洗後恢復冷房效率並減少異味。'
+      },
+      {
+        id: 'washer-basic',
+        name: '直立式洗衣機清洗（住家）',
+        content: '直立式洗衣機長期使用後，內槽與外槽間累積大量污泥、棉絮與黑色黴斑，洗完衣物容易殘留異味。本次分解內桶，徹底清洗內外槽、脫水槽與排水孔，搭配高壓沖洗處理，恢復洗衣槽乾淨。'
+      },
+      {
+        id: 'tank-basic',
+        name: '水塔清洗',
+        content: '頂樓水塔多年未清洗，底部沉積泥沙與鐵鏽，內壁附著水垢，影響用水品質。本次先將水塔內水位放水，人工刷洗內壁與底部沉積物，最後再以清水多次沖洗，最後確保出水清澈。'
+      },
+      {
+        id: 'ac-heavy',
+        name: '冷氣清洗（多年未保養）',
+        content: '客戶長期未保養冷氣，鰭片與風鼓附著厚重灰塵，冷房效果明顯變差且用電量偏高。本次室內機清洗保養，先以環保藥劑溶解油污，再搭配高壓沖洗與排水管疏通，明顯改善冷房效率與風量。'
+      }
+    ];
+    let descTemplates = [];
+
+    function normalizeDescTemplates(list){
+      if(!Array.isArray(list)) return DEFAULT_DESC_TEMPLATES.map(t=>({...t}));
+      return list
+        .filter(t=>t && String(t.name||'').trim() && String(t.content || t.text || '').trim())
+        .map(t=>({
+          id: String(t.id || ('tpl-' + Date.now() + '-' + Math.random().toString(16).slice(2))),
+          name: String(t.name || '').trim(),
+          content: String(t.content || t.text || '').trim()
+        }));
+    }
+
+    function loadDescTemplates(){
+      try{
+        const raw = localStorage.getItem(DESC_TEMPLATE_STORAGE_KEY);
+        if(raw){
+          descTemplates = normalizeDescTemplates(JSON.parse(raw));
+        } else {
+          descTemplates = DEFAULT_DESC_TEMPLATES.map(t=>({...t}));
+          saveDescTemplates();
+        }
+      }catch{
+        descTemplates = DEFAULT_DESC_TEMPLATES.map(t=>({...t}));
+      }
+      if(!descTemplates.length) descTemplates = DEFAULT_DESC_TEMPLATES.map(t=>({...t}));
+    }
+
+    function saveDescTemplates(){
+      try{ localStorage.setItem(DESC_TEMPLATE_STORAGE_KEY, JSON.stringify(descTemplates)); }catch{}
+    }
+
+    function buildDescTemplatesBackup(){
+      return {
+        type: 'natural-uncle-description-templates',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        templates: descTemplates.map(t=>({
+          id: t.id,
+          name: t.name,
+          content: t.content
+        }))
+      };
+    }
+
+    function downloadDescTemplatesBackup(){
+      const backup = buildDescTemplatesBackup();
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const dateText = new Date().toISOString().slice(0,10).replaceAll('-', '');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `natural-uncle-description-templates-${dateText}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    }
+
+    function readDescTemplatesBackupFile(file){
+      return new Promise((resolve, reject)=>{
+        if(!file) return reject(new Error('未選擇檔案'));
+        if(file.size > 1024 * 1024) return reject(new Error('檔案太大，請選擇正確的範本備份 JSON'));
+        const reader = new FileReader();
+        reader.onload = ()=>resolve(String(reader.result || ''));
+        reader.onerror = ()=>reject(new Error('讀取檔案失敗'));
+        reader.readAsText(file, 'utf-8');
       });
+    }
+
+    function parseDescTemplatesBackup(text){
+      let data;
+      try{ data = JSON.parse(text); }
+      catch{ throw new Error('JSON 格式錯誤，請確認是範本備份檔'); }
+
+      const sourceList = Array.isArray(data) ? data : data?.templates;
+      if(!Array.isArray(sourceList)) throw new Error('找不到 templates 範本資料');
+
+      const normalized = normalizeDescTemplates(sourceList);
+      if(!normalized.length) throw new Error('備份檔內沒有可用範本');
+
+      const usedIds = new Set();
+      return normalized.map((tpl, index)=>{
+        let id = tpl.id || `tpl-import-${Date.now()}-${index}`;
+        if(usedIds.has(id)){
+          id = `tpl-import-${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`;
+        }
+        usedIds.add(id);
+        return { ...tpl, id };
+      });
+    }
+
+    async function importDescTemplatesBackup(file){
+      try{
+        const text = await readDescTemplatesBackupFile(file);
+        const imported = parseDescTemplatesBackup(text);
+        if(!window.confirm(`確定匯入 ${imported.length} 個範本？\n\n匯入後會覆蓋目前所有範本。`)) return;
+        descTemplates = imported;
+        saveDescTemplates();
+        renderDescTemplateButtons();
+        refreshDescTemplateManager(descTemplates[0]?.id);
+        showCopyToast('範本已匯入還原');
+      }catch(err){
+        showAlert(err?.message || '匯入範本失敗');
+      }
+    }
+
+    function insertDescTemplate(tpl){
+      const textarea = document.getElementById('desc');
+      if(!textarea || !tpl?.content) return;
+      const current = textarea.value.trim();
+      textarea.value = current ? (textarea.value.replace(/\s*$/, '') + '\n\n' + tpl.content) : tpl.content;
+      textarea.focus();
+    }
+
+    function renderDescTemplateButtons(){
+      const list = document.getElementById('desc-template-list');
+      if(!list) return;
+      list.innerHTML = '';
+      descTemplates.forEach(tpl=>{
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-desc-template';
+        btn.dataset.templateId = tpl.id;
+        btn.textContent = tpl.name;
+        btn.addEventListener('click', ()=>insertDescTemplate(tpl));
+        list.appendChild(btn);
+      });
+    }
+
+    function refreshDescTemplateManager(selectedId){
+      const select = document.getElementById('desc-template-select');
+      const nameInput = document.getElementById('desc-template-name');
+      const contentInput = document.getElementById('desc-template-content');
+      if(!select || !nameInput || !contentInput) return;
+      const currentId = selectedId || select.value || descTemplates[0]?.id || '';
+      select.innerHTML = '';
+      descTemplates.forEach(tpl=>select.appendChild(new Option(tpl.name, tpl.id)));
+      select.value = descTemplates.some(t=>t.id===currentId) ? currentId : (descTemplates[0]?.id || '');
+      const tpl = descTemplates.find(t=>t.id===select.value) || descTemplates[0];
+      nameInput.value = tpl?.name || '';
+      contentInput.value = tpl?.content || '';
+    }
+
+    function getDescTemplateForm(){
+      const name = document.getElementById('desc-template-name')?.value.trim() || '';
+      const content = document.getElementById('desc-template-content')?.value.trim() || '';
+      if(!name || !content){
+        showAlert('請填寫範本名稱與範本文案');
+        return null;
+      }
+      return { name, content };
+    }
+
+    function initDescTemplateManager(){
+      loadDescTemplates();
+      renderDescTemplateButtons();
+      refreshDescTemplateManager();
+
+      const panel = document.getElementById('desc-template-panel');
+      const manageBtn = document.getElementById('manage-desc-templates');
+      const closeBtn = document.getElementById('close-desc-template-panel');
+      const select = document.getElementById('desc-template-select');
+      const nameInput = document.getElementById('desc-template-name');
+      const contentInput = document.getElementById('desc-template-content');
+
+      manageBtn?.addEventListener('click', ()=>{
+        panel?.classList.toggle('hidden');
+        refreshDescTemplateManager();
+      });
+      closeBtn?.addEventListener('click', ()=>panel?.classList.add('hidden'));
+      select?.addEventListener('change', ()=>refreshDescTemplateManager(select.value));
+
+      document.getElementById('save-desc-template')?.addEventListener('click', ()=>{
+        const form = getDescTemplateForm();
+        if(!form) return;
+        const id = select?.value;
+        const idx = descTemplates.findIndex(t=>t.id===id);
+        if(idx >= 0){
+          descTemplates[idx] = { ...descTemplates[idx], ...form };
+        } else {
+          descTemplates.push({ id:'tpl-' + Date.now(), ...form });
+        }
+        saveDescTemplates();
+        renderDescTemplateButtons();
+        refreshDescTemplateManager(id);
+        showCopyToast('範本已儲存');
+      });
+
+      document.getElementById('add-desc-template')?.addEventListener('click', ()=>{
+        const form = getDescTemplateForm();
+        if(!form) return;
+        const id = 'tpl-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+        descTemplates.push({ id, ...form });
+        saveDescTemplates();
+        renderDescTemplateButtons();
+        refreshDescTemplateManager(id);
+        showCopyToast('已新增範本');
+      });
+
+      document.getElementById('delete-desc-template')?.addEventListener('click', ()=>{
+        const id = select?.value;
+        const tpl = descTemplates.find(t=>t.id===id);
+        if(!tpl) return;
+        if(descTemplates.length <= 1){ showAlert('至少需要保留一個範本'); return; }
+        if(!window.confirm(`確定刪除「${tpl.name}」範本？`)) return;
+        descTemplates = descTemplates.filter(t=>t.id!==id);
+        saveDescTemplates();
+        renderDescTemplateButtons();
+        refreshDescTemplateManager();
+        showCopyToast('範本已刪除');
+      });
+
+      document.getElementById('reset-desc-templates')?.addEventListener('click', ()=>{
+        if(!window.confirm('確定還原預設範本？目前自訂與修改過的範本會被覆蓋。')) return;
+        descTemplates = DEFAULT_DESC_TEMPLATES.map(t=>({...t}));
+        saveDescTemplates();
+        renderDescTemplateButtons();
+        refreshDescTemplateManager();
+        showCopyToast('已還原預設範本');
+      });
+
+      document.getElementById('export-desc-templates')?.addEventListener('click', ()=>{
+        downloadDescTemplatesBackup();
+        showCopyToast('範本備份已下載');
+      });
+
+      const importBtn = document.getElementById('import-desc-templates-btn');
+      const importFile = document.getElementById('import-desc-templates-file');
+      importBtn?.addEventListener('click', ()=>importFile?.click());
+      importFile?.addEventListener('change', async ()=>{
+        const file = importFile.files?.[0];
+        await importDescTemplatesBackup(file);
+        importFile.value = '';
+      });
+
+      nameInput?.addEventListener('keydown', e=>{ if(e.key==='Enter') e.preventDefault(); });
+      contentInput?.addEventListener('keydown', e=>{ if((e.ctrlKey || e.metaKey) && e.key==='Enter') document.getElementById('save-desc-template')?.click(); });
     }
  function isLoggedIn(){ return !!getToken(); }
 
@@ -419,41 +722,173 @@
     $('#admin-login-btn')?.addEventListener('click', adminLogin);
     $('#admin-logout-btn')?.addEventListener('click', adminLogout);
     refreshAdminUI();
-    initDescTemplateButtons();
+    initDescTemplateManager();
 
-    /* ====== 編輯列邏輯 ====== */
-    function initRowControls(row){
-      const floorSel = row.querySelector('.floor-select');
-      const floorCustom = row.querySelector('.floor-custom');
-      const placeSel = row.querySelector('.place-select');
-      const placeCustom = row.querySelector('.place-custom');
-      const typeSel = row.querySelector('.type-select');
-      const typeCustom = row.querySelector('.type-custom');
-      function toggle(sel, custom, trigger){
-        if(sel.value === trigger){ custom.classList.remove('hidden'); custom.focus(); }
-        else { custom.classList.add('hidden'); custom.value = ''; }
-      }
-      floorSel.addEventListener('change', ()=>toggle(floorSel, floorCustom, 'custom-floor'));
-      placeSel.addEventListener('change', ()=>toggle(placeSel, placeCustom, 'custom-place'));
-      typeSel.addEventListener('change', ()=>toggle(typeSel, typeCustom, 'custom-type'));
+    /* ====== 設備/區域群組與照片列邏輯 ====== */
+    function toggleCustomSelect(sel, custom, trigger){
+      if(!sel || !custom) return;
+      if(sel.value === trigger){ custom.classList.remove('hidden'); custom.focus(); }
+      else { custom.classList.add('hidden'); custom.value = ''; }
+    }
+
+    function initGroupControls(group){
+      const floorSel = group.querySelector('.floor-select');
+      const floorCustom = group.querySelector('.floor-custom');
+      const placeSel = group.querySelector('.place-select');
+      const placeCustom = group.querySelector('.place-custom');
+      const typeSel = group.querySelector('.type-select');
+      const typeCustom = group.querySelector('.type-custom');
+      floorSel?.addEventListener('change', ()=>toggleCustomSelect(floorSel, floorCustom, 'custom-floor'));
+      placeSel?.addEventListener('change', ()=>toggleCustomSelect(placeSel, placeCustom, 'custom-place'));
+      typeSel?.addEventListener('change', ()=>toggleCustomSelect(typeSel, typeCustom, 'custom-type'));
+    }
+
+    function getSelectOrCustom(root, selectClass, customClass, customValue){
+      const sel = root.querySelector(selectClass);
+      const custom = root.querySelector(customClass);
+      return ((sel?.value === customValue ? custom?.value : sel?.value) || '').trim();
+    }
+
+    function getGroupMeta(group){
+      const floor = getSelectOrCustom(group, '.floor-select', '.floor-custom', 'custom-floor');
+      const place = getSelectOrCustom(group, '.place-select', '.place-custom', 'custom-place');
+      const type = getSelectOrCustom(group, '.type-select', '.type-custom', 'custom-type');
+      const note = (group.querySelector('.group-note')?.value || '').trim();
+      const parts = []; if(floor) parts.push(floor); if(place) parts.push(place); if(type) parts.push(type);
+      return {
+        id: group.dataset.groupId || ('group-' + Date.now()),
+        floor,
+        place,
+        type,
+        note,
+        title: parts.join('-') || note || '未命名設備/區域'
+      };
     }
 
     function getRowCaption(row, sep='-'){
-      const floorSel = row.querySelector('.floor-select');
-      const floorCustom = row.querySelector('.floor-custom');
-      const placeSel = row.querySelector('.place-select');
-      const placeCustom = row.querySelector('.place-custom');
-      const typeSel = row.querySelector('.type-select');
-      const typeCustom = row.querySelector('.type-custom');
-      const floor = (floorSel.value === 'custom-floor' ? (floorCustom.value||'') : (floorSel.value||'')).trim();
-      const place = (placeSel.value === 'custom-place' ? (placeCustom.value||'') : (placeSel.value||'')).trim();
-      const ctype = (typeSel.value === 'custom-type' ? (typeCustom.value||'') : (typeSel.value||'')).trim();
-      const parts = []; if(floor) parts.push(floor); if(place) parts.push(place); if(ctype) parts.push(ctype);
-      return parts.join(sep);
+      const manual = (row.querySelector('.caption-input')?.value || '').trim();
+      if (manual) return manual;
+      const group = row.closest('.group-card');
+      if (!group) return '';
+      const meta = getGroupMeta(group);
+      return meta.title || [meta.floor, meta.place, meta.type].filter(Boolean).join(sep);
     }
 
-    function addItemRow(file){
-      const itemsBox = $('#items');
+    function setGroupValues(group, meta={}){
+      function setSelect(selClass, customClass, customValue, value){
+        const sel=group.querySelector(selClass); const custom=group.querySelector(customClass);
+        if(!sel) return;
+        const v=(value||'').trim();
+        if(!v){ sel.value=''; custom?.classList.add('hidden'); if(custom) custom.value=''; return; }
+        const opt=Array.from(sel.options).find(o=>o.value===v || o.textContent===v);
+        if(opt){ sel.value=opt.value || opt.textContent; custom?.classList.add('hidden'); if(custom) custom.value=''; }
+        else { sel.value=customValue; if(custom){ custom.classList.remove('hidden'); custom.value=v; } }
+      }
+      setSelect('.floor-select','.floor-custom','custom-floor', meta.floor);
+      setSelect('.place-select','.place-custom','custom-place', meta.place);
+      setSelect('.type-select','.type-custom','custom-type', meta.type);
+      const note=group.querySelector('.group-note'); if(note) note.value=meta.note || '';
+    }
+
+    function refreshCoverState(){
+      const rows=$$('#items .row');
+      if(rows.length && !rows.some(r=>r.querySelector('.cover-radio')?.checked)){
+        const firstRadio=rows[0].querySelector('.cover-radio');
+        if(firstRadio) firstRadio.checked=true;
+      }
+      rows.forEach(r=>{
+        const radio=r.querySelector('.cover-radio');
+        const hint=r.querySelector('.cover-hint');
+        if(hint) hint.classList.toggle('hidden', !radio?.checked);
+      });
+    }
+
+    function initSortableForGroup(group){
+      if (!window.Sortable) return;
+      const box = group.querySelector('.group-items');
+      if (!box || box._sortableReady) return;
+      new Sortable(box,{ animation:150, handle:'.handle',
+        onStart:e=>e.item.classList.add('opacity-70'),
+        onEnd:e=>{ e.item.classList.remove('opacity-70'); refreshCoverState(); }
+      });
+      box._sortableReady = true;
+    }
+
+    function addGroup(meta={}){
+      const groupsBox = $('#items');
+      const group=document.createElement('div');
+      group.className='group-card';
+      group.dataset.groupId = meta.id || ('group-' + Date.now() + '-' + Math.random().toString(16).slice(2));
+      group.innerHTML=`
+        <div class="group-head">
+          <div>
+            <div class="group-title">設備/區域群組</div>
+            <div class="group-sub">同一台冷氣、同一台洗衣機、同一座水塔或同一區域的照片放在同一組。</div>
+          </div>
+          <button type="button" class="btn btn-ghost tap remove-group">刪除此群組</button>
+        </div>
+        <div class="grid md:grid-cols-3 gap-2">
+          <div>
+            <label class="block text-xs mb-1 text-slate-600">樓層</label>
+            <select class="input floor-select">
+              <option value="" disabled selected>請選擇樓層</option>
+              <option>1F</option><option>2F</option><option>3F</option><option>4F</option><option>5F</option>
+              <option value="custom-floor">5F以上（手動輸入）</option>
+            </select>
+            <input class="input mt-1 floor-custom hidden" placeholder="請輸入樓層（例如：6F、7F…）"/>
+          </div>
+          <div>
+            <label class="block text-xs mb-1 text-slate-600">所在類型</label>
+            <select class="input place-select">
+              <option value="" disabled selected>請選擇所在類型</option>
+              <option>客廳</option><option>房間</option><option>廚房</option><option>陽台</option><option>頂樓</option>
+              <option value="custom-place">其他（手動輸入）</option>
+            </select>
+            <input class="input mt-1 place-custom hidden" placeholder="請輸入所在類型"/>
+          </div>
+          <div>
+            <label class="block text-xs mb-1 text-slate-600">清洗類別</label>
+            <select class="input type-select">
+              <option value="" disabled selected>請選擇清洗類別</option>
+              <option>分離式冷氣室內機</option><option>吊隱式冷氣室內機</option>
+              <option>直立式洗衣機</option><option>水塔</option><option>自來水管</option>
+              <option value="custom-type">其他（手動輸入）</option>
+            </select>
+            <input class="input mt-1 type-custom hidden" placeholder="請輸入清洗類別"/>
+          </div>
+        </div>
+        <div class="mt-2">
+          <label class="block text-xs mb-1 text-slate-600">此設備/區域說明（選填）</label>
+          <input class="input group-note" placeholder="例：客廳冷氣，風鼓灰塵較厚、出風口有黑垢" />
+        </div>
+        <div class="group-items mt-3"></div>
+        <div class="group-tools">
+          <button type="button" class="btn btn-ghost tap add-photo">＋ 新增此群組照片</button>
+          <label class="btn btn-ghost tap cursor-pointer">
+            此群組選取多張
+            <input type="file" multiple accept="image/*" class="hidden group-multi-pick"/>
+          </label>
+        </div>`;
+      groupsBox.appendChild(group);
+      initGroupControls(group);
+      setGroupValues(group, meta);
+      initSortableForGroup(group);
+      group.querySelector('.add-photo').addEventListener('click',()=>addItemRow(null, group));
+      group.querySelector('.group-multi-pick').addEventListener('change',e=>{
+        Array.from(e.target.files||[]).forEach(f=>addItemRow(f, group));
+        e.target.value='';
+      });
+      group.querySelector('.remove-group').addEventListener('click',()=>{
+        if($$('#items .group-card').length <= 1){ showAlert('至少需要保留一個設備/區域群組'); return; }
+        group.remove(); refreshCoverState();
+      });
+      if (!group.querySelector('.row')) addItemRow(null, group);
+      return group;
+    }
+
+    function addItemRow(file, group){
+      group = group || $$('#items .group-card').at(-1) || addGroup();
+      const itemsBox = group.querySelector('.group-items');
       const row=document.createElement('div');
       row.className='row';
       row.innerHTML=`
@@ -461,86 +896,135 @@
         <div class="thumb">預覽</div>
         <div class="flex-1">
           <div class="grid gap-2">
+            <div class="flex flex-wrap items-center gap-3">
+              <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 select-none">
+                <input type="radio" name="coverItem" class="cover-radio accent-sky-600" />
+                設為封面圖
+              </label>
+              <span class="cover-hint hidden rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">目前封面</span>
+            </div>
             <input type="file" accept="image/*" class="input p-2" aria-label="選擇圖片" />
-            <div class="grid md:grid-cols-3 gap-2">
-              <div>
-                <label class="block text-xs mb-1 text-slate-600">樓層</label>
-                <select class="input floor-select">
-                  <option value="" disabled selected>請選擇樓層</option>
-                  <option>1F</option><option>2F</option><option>3F</option><option>4F</option><option>5F</option>
-                  <option value="custom-floor">5F以上（手動輸入）</option>
-                </select>
-                <input class="input mt-1 floor-custom hidden" placeholder="請輸入樓層（例如：6F、7F…）"/>
-              </div>
-              <div>
-                <label class="block text-xs mb-1 text-slate-600">所在類型</label>
-                <select class="input place-select">
-                  <option value="" disabled selected>請選擇所在類型</option>
-                  <option>客廳</option><option>房間</option><option>廚房</option>
-                  <option value="custom-place">其他（手動輸入）</option>
-                </select>
-                <input class="input mt-1 place-custom hidden" placeholder="請輸入所在類型"/>
-              </div>
-              <div>
-                <label class="block text-xs mb-1 text-slate-600">清洗類別</label>
-                <select class="input type-select">
-                  <option value="" disabled selected>請選擇清洗類別</option>
-                  <option>分離式冷氣室內機</option><option>吊隱式冷氣室內機</option>
-                  <option>直立式洗衣機</option><option>水塔</option>
-                  <option value="custom-type">其他（手動輸入）</option>
-                </select>
-                <input class="input mt-1 type-custom hidden" placeholder="請輸入清洗類別"/>
-              </div>
+            <div class="upload-note">此照片會套用上方群組資訊；需要單張補充時可填下方照片說明。</div>
+            <div class="upload-status" aria-live="polite"></div>
+            <div>
+              <label class="block text-xs mb-1 text-slate-600">單張照片說明（選填）</label>
+              <input class="input caption-input" placeholder="留空會自動使用此群組的：樓層-所在類型-清洗類別" />
             </div>
           </div>
         </div>
-        <button class="btn btn-ghost tap remove">刪除</button>`;
+        <button type="button" class="btn btn-ghost tap remove">刪除</button>`;
       itemsBox.appendChild(row);
 
       const fileInput=row.querySelector('input[type=file]');
       const thumb=row.querySelector('.thumb');
-      initRowControls(row);
-
+      const coverRadio=row.querySelector('.cover-radio');
+      const statusEl=row.querySelector('.upload-status');
+      function setRowStatus(message, state=''){
+        if(!statusEl) return;
+        statusEl.textContent=message||'';
+        statusEl.classList.remove('ok','warn','error');
+        if(state) statusEl.classList.add(state);
+      }
+      row._setUploadStatus = setRowStatus;
+      coverRadio.addEventListener('change', refreshCoverState);
+      if(!$('#items .cover-radio:checked')) coverRadio.checked=true;
+      refreshCoverState();
       function setPreviewFromFile(f){
         const fr=new FileReader();
         fr.onload=()=>{ thumb.innerHTML='<img decoding="async" loading="lazy" alt="預覽" class="w-full h-full object-cover" src="'+fr.result+'"/>'; };
         fr.readAsDataURL(f);
       }
-      row.querySelector('.remove').addEventListener('click',()=>row.remove());
+      function setPreviewFromUrl(url){
+        thumb.innerHTML='<img decoding="async" loading="lazy" alt="目前圖片" class="w-full h-full object-cover" src="'+galleryUrl(url)+'"/>';
+      }
+      row._setExistingItem = (item)=>{
+        row._existingUrl = item?.url || '';
+        row.querySelector('.caption-input').value = item?.caption || '';
+        if (row._existingUrl) setPreviewFromUrl(row._existingUrl);
+      };
+      row._refreshCoverState = refreshCoverState;
+      row.querySelector('.remove').addEventListener('click',()=>{
+        row.remove();
+        if(!group.querySelector('.row')) addItemRow(null, group);
+        refreshCoverState();
+      });
       fileInput.addEventListener('change',()=>{
         const f=fileInput.files[0]; if(!f) return;
-        if(f.size>MAX_MB*1024*1024){ showAlert('圖片超過 '+MAX_MB+'MB'); fileInput.value=''; return; }
-        row._file = f; setPreviewFromFile(f);
+        if(f.size>SOURCE_MAX_MB*1024*1024){ showAlert('原始圖片超過 '+SOURCE_MAX_MB+'MB，請先縮小後再選取'); fileInput.value=''; return; }
+        row._file = f; row._optimizedFile = null; row._existingUrl = ''; setPreviewFromFile(f);
+        setRowStatus(`已選取 ${fileSizeMB(f)}MB，送出時會自動壓縮`, 'warn');
       });
-
       if (file) {
         try { const dt=new DataTransfer(); dt.items.add(file); fileInput.files=dt.files; fileInput.dispatchEvent(new Event('change')); }
-        catch { row._file=file; setPreviewFromFile(file); }
+        catch { row._file=file; setPreviewFromFile(file); setRowStatus(`已選取 ${fileSizeMB(file)}MB，送出時會自動壓縮`, 'warn'); }
       }
+      return row;
     }
 
-    $('#addItem').addEventListener('click',()=> addItemRow());
-    $('#multiPick').addEventListener('change',e=>{
-      const files=Array.from(e.target.files||[]); files.forEach(f=> addItemRow(f)); e.target.value='';
-    });
-    addItemRow();
-
-    if (window.Sortable) {
-      new Sortable($('#items'),{ animation:150, handle:'.handle',
-        onStart:e=>e.item.classList.add('opacity-70'),
-        onEnd:  e=>e.item.classList.remove('opacity-70')
-      });
+    function collectGroupsFromEditor(){
+      const groups=[];
+      for (const group of $$('#items .group-card')){
+        const meta=getGroupMeta(group);
+        const rows=Array.from(group.querySelectorAll('.row'));
+        groups.push({ ...meta, items: [], _rows: rows });
+      }
+      return groups;
     }
 
-    async function uploadToCloudinary(file,folder){
-      const fd=new FormData();
-      fd.append('file',file);
-      fd.append('upload_preset',UPLOAD_PRESET);
-      fd.append('folder',folder);
-      const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,{method:'POST',body:fd});
-      const j=await res.json().catch(()=>({}));
-      if(!res.ok||!j.secure_url) throw new Error(j.error?.message||'Cloudinary upload failed');
-      return j.secure_url;
+    $('#addGroup')?.addEventListener('click',()=> addGroup());
+    async function optimizeImageFile(file){
+      if(!file || !file.type?.startsWith('image/')) return file;
+      if(file.type === 'image/gif' || file.type === 'image/svg+xml') return file;
+
+      let bitmap;
+      try{
+        bitmap = await createImageBitmap(file, { imageOrientation:'from-image' });
+      }catch{
+        return file;
+      }
+
+      const scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(bitmap.width, bitmap.height));
+      const width = Math.max(1, Math.round(bitmap.width * scale));
+      const height = Math.max(1, Math.round(bitmap.height * scale));
+      const canvas=document.createElement('canvas');
+      canvas.width=width; canvas.height=height;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0, width, height);
+      if(bitmap.close) bitmap.close();
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', IMAGE_QUALITY));
+      if(!blob) return file;
+
+      const optimized = new File(
+        [blob],
+        (file.name || 'image').replace(/\.[^.]+$/, '') + '-optimized.jpg',
+        { type:'image/jpeg', lastModified:Date.now() }
+      );
+
+      // 若原圖已很小且壓縮後反而更大，就保留原檔，避免畫質無謂下降。
+      if(file.size <= 1024*1024 && optimized.size >= file.size) return file;
+      return optimized;
+    }
+
+    async function uploadToCloudinary(file,folder,onAttempt){
+      let lastError;
+      for(let attempt=0; attempt<=UPLOAD_RETRY_LIMIT; attempt++){
+        try{
+          onAttempt?.(attempt+1);
+          const fd=new FormData();
+          fd.append('file',file);
+          fd.append('upload_preset',UPLOAD_PRESET);
+          fd.append('folder',folder);
+          const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,{method:'POST',body:fd});
+          const j=await res.json().catch(()=>({}));
+          if(!res.ok||!j.secure_url) throw new Error(j.error?.message||'Cloudinary upload failed');
+          return j.secure_url;
+        }catch(e){
+          lastError=e;
+          if(attempt < UPLOAD_RETRY_LIMIT) await wait(700 * (attempt + 1));
+        }
+      }
+      throw lastError || new Error('Cloudinary upload failed');
     }
 
     // 送出建立分享
@@ -555,39 +1039,70 @@
       const hidden=$('#hidden') ? $('#hidden').checked : false;
       const tags=$('#tags').value.trim();
       let slug=$('#slug').value.trim();
-      const rows=$$('#items>.row');
+      const groupDrafts = collectGroupsFromEditor();
+      const rows=$$('#items .row');
       if(!rows.length) return showAlert('請至少新增一張');
+      const checkedCoverIndex = rows.findIndex(row => row.querySelector('.cover-radio')?.checked);
+      const coverIndex = checkedCoverIndex >= 0 ? checkedCoverIndex : 0;
+      if(editingSlug) slug = editingSlug;
       if(!slug) slug=slugify((title||'case')+'-'+Date.now().toString().slice(-6));
 
       try{
-        setBar(0); setProgress('準備上傳…');
+        setBar(0); setProgress(editingSlug ? '準備更新…' : '準備上傳…');
         const folder=`collages/${slug}`;
-        const items=[]; let done=0;
+        const items=[]; const groups=[]; let done=0;
 
-        for (const row of rows){
-          const f = row.querySelector('input[type=file]')?.files?.[0] || row._file;
-          const caption = getRowCaption(row);
-          if(!f){ showAlert('有一列未選圖片'); return; }
-          if(f.size>MAX_MB*1024*1024){ showAlert('有圖片超過 '+MAX_MB+'MB'); return; }
-          setProgress(`上傳中… ${done+1} / ${rows.length}`);
-          const url = await uploadToCloudinary(f, folder);
-          items.push({ url, caption });
-          done++; setBar(done/rows.length*100);
+        for (const groupDraft of groupDrafts){
+          const { _rows, ...groupMeta } = groupDraft;
+          const groupItems = [];
+          for (const row of _rows){
+            const f = row.querySelector('input[type=file]')?.files?.[0] || row._file;
+            const oldUrl = row._existingUrl || '';
+            const caption = getRowCaption(row);
+            if(!f && !oldUrl){ showAlert('有一列未選圖片'); return; }
+            let url = oldUrl;
+            if(f){
+            if(f.size>SOURCE_MAX_MB*1024*1024){ showAlert('有原始圖片超過 '+SOURCE_MAX_MB+'MB'); return; }
+            row._setUploadStatus?.('壓縮圖片中…');
+            setProgress(`壓縮中… ${done+1} / ${rows.length}`);
+            const uploadFile = row._optimizedFile || await optimizeImageFile(f);
+            row._optimizedFile = uploadFile;
+            if(uploadFile.size>MAX_MB*1024*1024){ showAlert('壓縮後仍超過 '+MAX_MB+'MB，請先縮小圖片再上傳'); return; }
+            const savedMB = Math.max(0, f.size - uploadFile.size) / 1024 / 1024;
+            const sizeNote = uploadFile === f ? `${fileSizeMB(uploadFile)}MB` : `${fileSizeMB(f)}MB → ${fileSizeMB(uploadFile)}MB，省下 ${savedMB.toFixed(2)}MB`;
+            row._setUploadStatus?.(`準備上傳：${sizeNote}`);
+            setProgress(`上傳中… ${done+1} / ${rows.length}`);
+              url = await uploadToCloudinary(uploadFile, folder, attempt=>{
+                const retryText = attempt > 1 ? `，第 ${attempt} 次嘗試` : '';
+                row._setUploadStatus?.(`上傳中${retryText}：${sizeNote}`);
+              });
+              row._setUploadStatus?.(`上傳完成：${sizeNote}`, 'ok');
+            } else {
+              setProgress(`保留原圖… ${done+1} / ${rows.length}`);
+              row._setUploadStatus?.('保留原本圖片', 'ok');
+            }
+            const item = { url, caption, groupId: groupMeta.id, groupTitle: groupMeta.title, floor: groupMeta.floor, place: groupMeta.place, type: groupMeta.type };
+            groupItems.push(item);
+            items.push(item);
+            done++; setBar(done/rows.length*100);
+          }
+          groups.push({ ...groupMeta, items: groupItems });
         }
 
-        setProgress('儲存資料…');
-        const resp = await fetch('/.netlify/functions/create-post',{
+        setProgress(editingSlug ? '更新資料…' : '儲存資料…');
+        const endpoint = editingSlug ? '/.netlify/functions/update-post' : '/.netlify/functions/create-post';
+        const resp = await fetch(endpoint,{
           method:'POST',
           headers:{
             'Content-Type':'application/json',
             // 🔐 帶上管理員 JWT（新增）
             'Authorization': 'Bearer ' + token
           },
-          body: JSON.stringify({ title, date, desc, tags, slug, items, visible: !hidden })
+          body: JSON.stringify({ title, date, desc, tags, slug, items, groups, coverIndex, visible: !hidden, created_at: editingRecord?.created_at })
         });
         const txt = await resp.text();
         let data; try{ data = JSON.parse(txt); }catch{ data = { error: txt }; }
-        if(!resp.ok || !data.ok) throw new Error(data.error || '建立失敗');
+        if(!resp.ok || !data.ok) throw new Error(data.error || (editingSlug ? '更新失敗' : '建立失敗'));
 
         const basePath = location.pathname.replace(/index\.html$/,'').replace(/\/$/,'');
         const shareUrl = location.origin + basePath + '/p/' + encodeURIComponent(data.slug) + '?showDates=1';
@@ -600,12 +1115,108 @@
         sessionStorage.setItem('justCreated','1');
 
         location.hash = '#/v/' + encodeURIComponent(data.slug);
-        setProgress('完成！');
+        setProgress(editingSlug ? '更新完成！' : '完成！');
       }catch(e){
         setProgress(''); setBar(0);
-        showAlert('建立失敗：' + (e.message || e));
+        showAlert((editingSlug ? '更新失敗：' : '建立失敗：') + (e.message || e));
       }
           });
+
+
+    function getTodayDateValue(){
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function resetEditorForCreate(){
+      editingSlug = null;
+      editingRecord = null;
+      $('#editor-title').textContent = '建立分享';
+      $('#upload').textContent = '上傳全部並產生連結';
+      $('#cancel-edit')?.classList.add('hidden');
+      $('#slug').disabled = false;
+      $('#title').value = '';
+      $('#date').value = getTodayDateValue();
+      if ($('#desc')) $('#desc').value = '';
+      $('#tags').value = '';
+      $('#slug').value = '';
+      if ($('#hidden')) $('#hidden').checked = false;
+      $('#items').innerHTML = '';
+      addGroup();
+      setBar(0); setProgress('');
+    }
+
+    async function loadPostForEdit(slug){
+      if (!isLoggedIn()) {
+        showAlert('請先登入管理員再編輯案件');
+        location.hash = '#/new';
+        return;
+      }
+      try{
+        setProgress('讀取案件資料…');
+        const r=await fetch('/.netlify/functions/get-post?slug='+encodeURIComponent(slug));
+        const t=await r.text(); let d; try{ d=JSON.parse(t); }catch{ throw new Error(t); }
+        if(d.error) throw new Error(d.error);
+
+        editingSlug = d.slug || slug;
+        editingRecord = d;
+        $('#viewer').classList.add('hidden');
+        $('#editor').classList.remove('hidden');
+        $('#editor-title').textContent = '編輯案件';
+        $('#upload').textContent = '儲存修改';
+        $('#cancel-edit')?.classList.remove('hidden');
+        $('#title').value = d.title || '';
+        $('#date').value = d.date || '';
+        if ($('#desc')) $('#desc').value = d.desc || '';
+        $('#tags').value = Array.isArray(d.tags) ? d.tags.join(', ') : (d.tags || '');
+        $('#slug').value = editingSlug;
+        $('#slug').disabled = true;
+        if ($('#hidden')) $('#hidden').checked = d.visible === false;
+        $('#items').innerHTML = '';
+        const coverIndex = Number.isInteger(Number(d.coverIndex)) ? Number(d.coverIndex) : 0;
+        let flatIndex = 0;
+        if (Array.isArray(d.groups) && d.groups.length){
+          d.groups.forEach(groupData=>{
+            const group = addGroup(groupData || {});
+            const groupItemsBox = group.querySelector('.group-items');
+            if (groupItemsBox) groupItemsBox.innerHTML = '';
+            const groupItems = Array.isArray(groupData.items) ? groupData.items : [];
+            groupItems.forEach(item=>{
+              const row = addItemRow(null, group);
+              row._setExistingItem(item || {});
+              const radio = row.querySelector('.cover-radio');
+              if (radio && flatIndex === coverIndex) radio.checked = true;
+              flatIndex++;
+            });
+            if (!group.querySelector('.row')) addItemRow(null, group);
+          });
+        } else {
+          const group = addGroup({ note:'舊案例匯入群組' });
+          const groupItemsBox = group.querySelector('.group-items');
+          if (groupItemsBox) groupItemsBox.innerHTML = '';
+          (Array.isArray(d.items) ? d.items : []).forEach((item, index)=>{
+            const groupMeta = { floor:item.floor || '', place:item.place || '', type:item.type || '', note:item.groupTitle || '' };
+            if(index === 0 && (groupMeta.floor || groupMeta.place || groupMeta.type || groupMeta.note)) setGroupValues(group, groupMeta);
+            const row = addItemRow(null, group);
+            row._setExistingItem(item || {});
+            const radio = row.querySelector('.cover-radio');
+            if (radio && index === coverIndex) radio.checked = true;
+          });
+        }
+        if (!$('#items .row')) addGroup();
+        const checked = $('#items .cover-radio:checked') || $('#items .cover-radio');
+        if (checked) checked.checked = true;
+        refreshCoverState();
+        setBar(0); setProgress('');
+      }catch(e){
+        setProgress('');
+        showAlert('讀取編輯資料失敗：' + (e.message || e));
+        location.hash = '#/new';
+      }
+    }
 
     /* ===== Viewer + Lightbox ===== */
     let lbIndex = 0, lbItems = [];
@@ -688,7 +1299,8 @@
     function route(){
       const h=location.hash||'#/new';
       if (h.startsWith('#/v/')) loadPost(decodeURIComponent(h.replace('#/v/','')));
-      else { $('#viewer').classList.add('hidden'); $('#editor').classList.remove('hidden'); }
+      else if (h.startsWith('#/edit/')) loadPostForEdit(decodeURIComponent(h.replace('#/edit/','')));
+      else { $('#viewer').classList.add('hidden'); $('#editor').classList.remove('hidden'); resetEditorForCreate(); }
     }
     window.addEventListener('hashchange', route, { passive: true }); route();
   });

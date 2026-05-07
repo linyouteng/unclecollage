@@ -126,7 +126,7 @@ export default async (request) => {
     return sendJSON({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { title, date, desc, tags, slug, items, visible } = body || {};
+  const { title, date, desc, tags, slug, items, groups, coverIndex, visible } = body || {};
 
   // 基本驗證
   if (!slug || !String(slug).trim()) {
@@ -136,8 +136,11 @@ export default async (request) => {
     return sendJSON({ error: 'items required' }, 400);
   }
 
-  // 第一張圖當預覽縮圖
-  const previewUrl = items[0]?.url || null;
+  // 使用前端指定的封面圖當預覽縮圖；未指定或超出範圍時退回第一張圖
+  const normalizedCoverIndex = Number.isInteger(Number(coverIndex))
+    ? Math.min(Math.max(Number(coverIndex), 0), items.length - 1)
+    : 0;
+  const previewUrl = items[normalizedCoverIndex]?.url || items[0]?.url || null;
 
   // 我們要儲存的資料格式
   const record = {
@@ -146,7 +149,10 @@ export default async (request) => {
     date,
     desc: desc || '',
     tags,
-    items, // [{ url, caption }, ...]
+    items, // flat list for gallery/zip compatibility
+    groups: Array.isArray(groups) ? groups : [],
+    coverIndex: normalizedCoverIndex,
+    cover: previewUrl,
     created_at: new Date().toISOString(),
     preview: previewUrl,
     visible: typeof visible === 'boolean' ? visible : true, // 預設上架，除非前端指定隱藏

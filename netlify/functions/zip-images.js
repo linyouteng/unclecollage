@@ -14,8 +14,14 @@ function yyyymmdd(input){
 }
 
 export default async (request) => {
-  if (request.method === 'OPTIONS') return new Response(null, {status:204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET,POST,OPTIONS', 'access-control-allow-headers': 'content-type' }});
-  if (request.method === 'OPTIONS') return json({}, 204);
+  if (request.method === 'OPTIONS') return new Response(null, {
+    status: 204,
+    headers: {
+      'access-control-allow-origin': '*',
+      'access-control-allow-methods': 'GET,POST,OPTIONS',
+      'access-control-allow-headers': 'content-type'
+    }
+  });
   try {
     const url = new URL(request.url);
     const slug = url.searchParams.get('slug');

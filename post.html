@@ -4,15 +4,15 @@
 <head>
 <meta content="#0f172a" name="theme-color"/>
 <meta charset="utf-8"/>
-<title>前後對比照片｜作業說明</title>
-<meta name="description" content="點開查看前後對比照片｜作業說明，可下載原始照片（ZIP）。"/>
-<meta property="og:title" content="前後對比照片｜作業說明"/>
-<meta property="og:description" content="點開查看前後對比照片｜作業說明，可下載原始照片（ZIP）。"/>
+<title>自然大叔｜清洗前後照片紀錄</title>
+<meta name="description" content="自然大叔清洗前後照片紀錄，可查看案例照片、下載 ZIP，並複製 LINE 分享文案。"/>
+<meta property="og:title" content="自然大叔｜清洗前後照片紀錄"/>
+<meta property="og:description" content="查看本次清洗前後照片紀錄，方便留存與日後保養參考。"/>
 <meta property="og:type" content="website"/>
 <meta property="og:image" content="logo2.png"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:title" content="前後對比照片｜作業說明"/>
-<meta name="twitter:description" content="點開查看前後對比照片｜作業說明，可下載原始照片（ZIP）。"/>
+<meta name="twitter:title" content="自然大叔｜清洗前後照片紀錄"/>
+<meta name="twitter:description" content="查看本次清洗前後照片紀錄，方便留存與日後保養參考。"/>
 <meta name="twitter:image" content="logo2.png"/>
 
 <link href="logo.png" rel="icon" type="image/png"/>
@@ -33,6 +33,26 @@
     .nav { display:flex; align-items:center; justify-content:space-between; height:64px; }
     .logo { display:flex; align-items:center; gap:10px; font-weight:800 }
     .logo img { height:40px; width:auto; max-height:40px; max-width:none; object-fit:contain; border-radius:6px }
+
+    .brand-title{ font-weight:800; letter-spacing:.02em; }
+    .brand-links{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+    .brand-links a{ padding:8px 12px; border-radius:999px; border:1px solid #ddd; background:#fff; color:#374151; font-weight:700; font-size:13px; }
+    .brand-links a:hover{ background:#f3f4f6; }
+    .brand-links .primary-link{ background:var(--brand); border-color:var(--brand); color:#fff; }
+    .site-cta{
+      margin:34px 0 0;
+      padding:22px;
+      border:1px solid rgba(148,163,184,.35);
+      border-radius:20px;
+      background:linear-gradient(135deg,#ffffff,#f3f4f6);
+      box-shadow:0 16px 40px rgba(15,23,42,.08);
+    }
+    .site-cta h2{ margin:0 0 8px; font-size:22px; }
+    .site-cta p{ margin:0; color:var(--muted); line-height:1.7; }
+    .site-cta-actions{ display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+    .site-cta-actions a{ display:inline-flex; align-items:center; justify-content:center; padding:10px 14px; border-radius:999px; border:1px solid #ddd; background:#fff; font-weight:800; }
+    .site-cta-actions .primary{ background:var(--brand); border-color:var(--brand); color:#fff; }
+
     main { padding:28px 0 60px }
     .title { font-size: clamp(22px, 4vw, 36px); margin: 8px 0 8px; font-weight:800 }
     .muted { color:var(--muted); font-size:14px }
@@ -40,7 +60,7 @@
     .tag { font-size:12px; padding:4px 8px; border-radius:999px; background:#f3f4f6; border:1px solid #eee }
     .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px }
     .btn { padding:10px 14px; border-radius:10px; background:var(--brand); color:#fff; font-weight:700; border:0 }
-    .ghost { padding:10px 14px; border-radius:10px; border:1px solid #ddd; background:#fff }
+    .ghost { padding:10px 14px; border-radius:10px; border:1px solid #ddd; background:#fff; cursor:pointer; font:inherit }
     .desc { margin-top:14px; line-height:1.7; color:#333 }
         /* 讓「案件說明」支援換行（\n 會顯示成真正換行） */
     #desc { white-space: pre-line; }
@@ -117,6 +137,10 @@
     .grid { display:grid; grid-template-columns: repeat(12, 1fr); gap:20px; margin-top:24px }
     .card { grid-column: span 12; border:1px solid rgba(148,163,184,.35); border-radius: var(--radius); overflow:hidden; background:#fff; box-shadow:0 16px 40px rgba(15,23,42,.12); }
     .cap { padding:10px 12px; font-size:14px; color:#444; border-top:1px solid #f0f0f0 }
+    .photo-group{ grid-column: span 12; margin-top:28px; }
+    .photo-group-head{ margin:0 0 12px; padding:14px 16px; border-radius:16px; background:#fff; border:1px solid rgba(148,163,184,.35); box-shadow:0 10px 28px rgba(15,23,42,.06); }
+    .photo-group-head h2{ margin:0; font-size:18px; }
+    .photo-group-head p{ margin:6px 0 0; color:#666; line-height:1.6; font-size:14px; }
     .meta { display:flex; align-
     @media (max-width: 640px){
       header{
@@ -181,10 +205,16 @@ time[datetime].work-date{display:none !important;}
 <header>
 <meta content="#0f172a" name="theme-color"/>
 <div class="container nav">
-<div class="logo" href="index.html">
-<img alt="logo" src="logo.png"/>
-</div>
-<a class="ghost" href="gallery.html">回到清單</a>
+<a class="logo" href="https://natural-uncle-official.netlify.app" target="_blank" rel="noopener">
+<img alt="自然大叔 Natural Uncle" src="logo.png"/>
+<span class="brand-title">自然大叔｜照片紀錄</span>
+</a>
+<nav class="brand-links" aria-label="官方網站導覽">
+<a href="gallery.html">案例清單</a>
+<a href="https://natural-uncle-official.netlify.app" target="_blank" rel="noopener">官方網站</a>
+<a href="https://natural-uncle-official.netlify.app#pricing" target="_blank" rel="noopener">價格方案</a>
+<a class="primary-link" href="https://line.me/R/ti/p/%40uncle888" target="_blank" rel="noopener">LINE 預約</a>
+</nav>
 </div>
 </header>
 <main class="container" id="main">
@@ -198,8 +228,18 @@ time[datetime].work-date{display:none !important;}
 <div class="actions">
 <a class="ghost" href="#" id="zip">下載 ZIP</a>
 <a class="ghost" href="#" id="share" rel="noopener" target="_blank">連結分享</a>
+<button class="ghost" id="copy-line" type="button">複製 LINE 文案</button>
 </div>
 <section class="grid" id="images"></section>
+<section class="site-cta" aria-label="自然大叔服務預約">
+  <h2>需要冷氣、洗衣機、水塔或自來水管清洗？</h2>
+  <p>自然大叔提供到府專業清洗、透明價格、完工保固與照片紀錄。可先 LINE 傳照片快速估價，也可以直接線上預約。</p>
+  <div class="site-cta-actions">
+    <a class="primary" href="https://line.me/R/ti/p/%40uncle888" target="_blank" rel="noopener">LINE 預約／詢價</a>
+    <a href="https://natural-uncle-official.netlify.app" target="_blank" rel="noopener">查看官方網站</a>
+    <a href="https://uncle-reservation-platform.netlify.app" target="_blank" rel="noopener">立即線上預約</a>
+  </div>
+</section>
 </main>
 <script>
 function setText(id, text){ var el = qsel(id); if (el) el.textContent = text; }
@@ -373,16 +413,83 @@ function render(slug, data){
     clone.addEventListener('click', onShare, true);
   }
 
+  const copyLineBtn = qsel('copy-line');
+  if (copyLineBtn){
+    const onCopyLine = async function(e){
+      e.preventDefault();
+      const slug0 = getSlug();
+      const sp0 = new URL(location.href).searchParams;
+      const showDates0 = sp0.get('showDates') === '1';
+      const basePath0 = location.pathname.replace(/\/post\.html$/,'');
+      const shareUrl = location.origin + basePath0 + '/p/' + encodeURIComponent(slug0 || '') + (showDates0 ? '?showDates=1' : '');
+      const titleText = (data.title || slug0 || '清洗照片紀錄').toString().trim();
+      const dateText = qsel('date') ? qsel('date').textContent.trim() : '';
+      const descText = (data.desc || '').toString().trim();
+      const tagsText = Array.isArray(tagsArr) && tagsArr.length ? '\n服務項目：' + tagsArr.join('、') : '';
+      const lineText = [
+        '您好，這是本次自然大叔清洗前後照片紀錄：',
+        titleText,
+        dateText ? '服務日期：' + dateText : '',
+        tagsText ? tagsText.replace(/^\n/, '') : '',
+        descText ? '案件說明：' + descText : '',
+        '',
+        '照片連結：',
+        shareUrl,
+        '',
+        '更多服務資訊與透明價格可參考官方網站：',
+        'https://natural-uncle-official.netlify.app',
+        '',
+        'LINE 預約／詢價：@uncle888',
+        'https://line.me/R/ti/p/%40uncle888',
+        '',
+        '照片內含施工前後紀錄，方便您日後保養參考。'
+      ].filter(function(line){ return line !== ''; }).join('\n');
+      try{
+        if (navigator.clipboard && navigator.clipboard.writeText){
+          await navigator.clipboard.writeText(lineText);
+          showAlert('已複製 LINE 分享文案');
+        } else {
+          showPrompt('複製 LINE 分享文案：', lineText);
+        }
+      }catch(_){
+        showPrompt('複製 LINE 分享文案：', lineText);
+      }
+    };
+    const cloneLine = copyLineBtn.cloneNode(true);
+    copyLineBtn.parentNode.replaceChild(cloneLine, copyLineBtn);
+    cloneLine.addEventListener('click', onCopyLine, true);
+  }
+
   const grid = qsel('images'); if (grid) grid.innerHTML = '';
-  for (let i = 0; i < normalized.length; i++){
-    const it = normalized[i];
+  const hasGroups = Array.isArray(data.groups) && data.groups.some(function(g){ return Array.isArray(g.items) && g.items.length; });
+  function renderPhotoCard(parent, it){
+    const globalIndex = normalized.findIndex(function(x){ return x.url === it.url; });
     const card = document.createElement('article'); card.className = 'card';
-    const link = document.createElement('a'); link.href = it.url; link.addEventListener('click', function(e){ e.preventDefault(); openLightbox(i); });
+    const link = document.createElement('a'); link.href = it.url; link.addEventListener('click', function(e){ e.preventDefault(); openLightbox(globalIndex >= 0 ? globalIndex : 0); });
     const img = document.createElement('img'); img.loading = 'lazy'; img.alt = it.alt || ''; img.src = it.url;
     link.appendChild(img); card.appendChild(link);
     const cap = document.createElement('div'); cap.className = 'cap'; cap.textContent = it.caption || it.alt || '';
     card.appendChild(cap);
-    if (grid) grid.appendChild(card);
+    parent.appendChild(card);
+  }
+
+  if (grid && hasGroups){
+    data.groups.forEach(function(group){
+      const groupItems = Array.isArray(group.items) ? group.items.map(function(x){ return { url:x.url || x.src || '', alt:x.alt || x.caption || '', caption:x.caption || '' }; }).filter(function(x){ return x.url; }) : [];
+      if(!groupItems.length) return;
+      const wrap = document.createElement('section'); wrap.className = 'photo-group';
+      const head = document.createElement('div'); head.className = 'photo-group-head';
+      const h2 = document.createElement('h2'); h2.textContent = group.title || [group.floor, group.place, group.type].filter(Boolean).join('-') || '設備/區域照片';
+      head.appendChild(h2);
+      const metaText = [group.floor, group.place, group.type].filter(Boolean).join('｜');
+      const noteText = group.note ? String(group.note) : '';
+      if(metaText || noteText){ const p=document.createElement('p'); p.textContent = [metaText, noteText].filter(Boolean).join('　'); head.appendChild(p); }
+      const inner = document.createElement('div'); inner.className = 'grid';
+      groupItems.forEach(function(it){ renderPhotoCard(inner, it); });
+      wrap.appendChild(head); wrap.appendChild(inner); grid.appendChild(wrap);
+    });
+  } else if (grid){
+    for (let i = 0; i < normalized.length; i++) renderPhotoCard(grid, normalized[i]);
   }
 
   // zip link
