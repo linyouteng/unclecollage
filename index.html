@@ -264,6 +264,7 @@
         <div class="card p-4 flex flex-col md:flex-row md:items-center gap-3">
           <input id="share-url" class="input md:flex-1" readonly />
           <button id="copy-link" class="btn btn-primary tap md:w-auto w-full">複製連結</button>
+          <button id="copy-line-after-create" class="btn btn-ghost tap md:w-auto w-full" type="button">複製 LINE 文案</button>
         </div>
       </div>
 
@@ -1224,6 +1225,45 @@
     function closeLightbox(){ $('#lightbox').classList.remove('open'); $('#lb-img').src = ''; }
     function next(){ openLightbox(lbIndex+1); } function prev(){ openLightbox(lbIndex-1); }
 
+    function buildLineCopyText(data, slug, shareUrl){
+      const titleText = ((data && data.title) || slug || '清洗照片紀錄').toString().trim();
+      let dateText = '';
+      if (data && data.date) {
+        const dt = new Date(data.date);
+        if (!Number.isNaN(dt.getTime())) {
+          const yyyy = dt.getFullYear();
+          const mm = String(dt.getMonth() + 1).padStart(2, '0');
+          const dd = String(dt.getDate()).padStart(2, '0');
+          dateText = `${yyyy}/${mm}/${dd}`;
+        }
+      }
+      const tagsArr = ((data && data.tags) || '').split(',').map(x=>x.trim()).filter(Boolean);
+      const introLines = [
+        titleText,
+        dateText ? '服務日期：' + dateText : '',
+        tagsArr.length ? '服務項目：' + tagsArr.join('、') : ''
+      ].filter(Boolean);
+      return [
+        introLines.join('\n'),
+        ['照片連結：', shareUrl].join('\n'),
+        ['更多服務資訊與價格可參考官方網站：', 'https://natural-uncle-official.netlify.app'].join('\n'),
+        '照片內含施工前後紀錄，方便您日後保養參考。'
+      ].filter(Boolean).join('\n\n');
+    }
+
+    async function copyTextWithFallback(text, promptTitle){
+      try{
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          await navigator.clipboard.writeText(text);
+          showCopyToast('已複製！');
+        } else {
+          window.prompt(promptTitle || '請手動複製：', text);
+        }
+      }catch(_){
+        window.prompt(promptTitle || '請手動複製：', text);
+      }
+    }
+
     async function loadPost(slug){
       try{
         const r=await fetch('/.netlify/functions/get-post?slug='+encodeURIComponent(slug));
@@ -1273,9 +1313,15 @@
           navigator.clipboard.writeText(shareUrl)
             .then(() => showCopyToast())
             .catch(() => showCopyToast('複製失敗，請手動長按網址複製'));
+          const copyLineAfterCreate = $('#copy-line-after-create');
+          if (copyLineAfterCreate) {
+            copyLineAfterCreate.onclick = () => copyTextWithFallback(buildLineCopyText(d, slug, shareUrl), '複製 LINE 文案：');
+          }
           sessionStorage.removeItem('justCreated');
         } else {
           $('#share-link').classList.add('hidden');
+          const copyLineAfterCreate = $('#copy-line-after-create');
+          if (copyLineAfterCreate) copyLineAfterCreate.onclick = null;
         }
       }catch(e){
         showAlert('讀取失敗：' + (e.message || e));

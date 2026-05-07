@@ -5,7 +5,7 @@
 <meta content="#0f172a" name="theme-color"/>
 <meta charset="utf-8"/>
 <title>自然大叔｜清洗前後照片紀錄</title>
-<meta name="description" content="自然大叔清洗前後照片紀錄，可查看案例照片、下載 ZIP，並複製 LINE 分享文案。"/>
+<meta name="description" content="自然大叔清洗前後照片紀錄，可查看案例照片與下載 ZIP。"/>
 <meta property="og:title" content="自然大叔｜清洗前後照片紀錄"/>
 <meta property="og:description" content="查看本次清洗前後照片紀錄，方便留存與日後保養參考。"/>
 <meta property="og:type" content="website"/>
@@ -228,7 +228,6 @@ time[datetime].work-date{display:none !important;}
 <div class="actions">
 <a class="ghost" href="#" id="zip">下載 ZIP</a>
 <a class="ghost" href="#" id="share" rel="noopener" target="_blank">連結分享</a>
-<button class="ghost" id="copy-line" type="button">複製 LINE 文案</button>
 </div>
 <section class="grid" id="images"></section>
 <section class="site-cta" aria-label="自然大叔服務預約">
@@ -411,53 +410,6 @@ function render(slug, data){
     const clone = first.cloneNode(true);
     first.parentNode.replaceChild(clone, first);
     clone.addEventListener('click', onShare, true);
-  }
-
-  const copyLineBtn = qsel('copy-line');
-  if (copyLineBtn){
-    const onCopyLine = async function(e){
-      e.preventDefault();
-      const slug0 = getSlug();
-      const sp0 = new URL(location.href).searchParams;
-      const showDates0 = sp0.get('showDates') === '1';
-      const basePath0 = location.pathname.replace(/\/post\.html$/,'');
-      const shareUrl = location.origin + basePath0 + '/p/' + encodeURIComponent(slug0 || '') + (showDates0 ? '?showDates=1' : '');
-      const titleText = (data.title || slug0 || '清洗照片紀錄').toString().trim();
-      const dateText = qsel('date') ? qsel('date').textContent.trim() : '';
-      const descText = (data.desc || '').toString().trim();
-      const tagsText = Array.isArray(tagsArr) && tagsArr.length ? '\n服務項目：' + tagsArr.join('、') : '';
-      const lineText = [
-        '您好，這是本次自然大叔清洗前後照片紀錄：',
-        titleText,
-        dateText ? '服務日期：' + dateText : '',
-        tagsText ? tagsText.replace(/^\n/, '') : '',
-        descText ? '案件說明：' + descText : '',
-        '',
-        '照片連結：',
-        shareUrl,
-        '',
-        '更多服務資訊與透明價格可參考官方網站：',
-        'https://natural-uncle-official.netlify.app',
-        '',
-        'LINE 預約／詢價：@uncle888',
-        'https://line.me/R/ti/p/%40uncle888',
-        '',
-        '照片內含施工前後紀錄，方便您日後保養參考。'
-      ].filter(function(line){ return line !== ''; }).join('\n');
-      try{
-        if (navigator.clipboard && navigator.clipboard.writeText){
-          await navigator.clipboard.writeText(lineText);
-          showAlert('已複製 LINE 分享文案');
-        } else {
-          showPrompt('複製 LINE 分享文案：', lineText);
-        }
-      }catch(_){
-        showPrompt('複製 LINE 分享文案：', lineText);
-      }
-    };
-    const cloneLine = copyLineBtn.cloneNode(true);
-    copyLineBtn.parentNode.replaceChild(cloneLine, copyLineBtn);
-    cloneLine.addEventListener('click', onCopyLine, true);
   }
 
   const grid = qsel('images'); if (grid) grid.innerHTML = '';
