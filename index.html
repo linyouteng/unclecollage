@@ -29,6 +29,14 @@
 .group-sub { font-size:12px; color:#64748b; margin-top:2px; }
 .group-items { display:flex; flex-direction:column; gap:10px; }
 .group-tools { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.viewer-desc-wrap { padding:0 20px 16px; }
+.viewer-desc-box { white-space:pre-line; line-height:1.75; color:#334155; background:#f8fafc; border:1px solid rgba(148,163,184,.35); border-radius:1rem; padding:14px 16px; }
+.viewer-group-section { grid-column:1 / -1; }
+.viewer-group-head { margin-bottom:12px; padding:14px 16px; border-radius:1rem; background:#f8fafc; border:1px solid rgba(148,163,184,.35); }
+.viewer-group-head h3 { font-weight:800; color:#0f172a; font-size:1.05rem; margin:0; }
+.viewer-group-head p { white-space:pre-line; color:#64748b; font-size:.92rem; line-height:1.65; margin:.35rem 0 0; }
+.viewer-group-grid { display:grid; grid-template-columns:1fr; gap:12px; }
+@media (min-width:640px){ .viewer-group-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
   .handle { cursor:grab; padding:6px 8px; border-radius:10px; background:#e2e8f0; color:#334155; user-select:none; touch-action:none; }
   .thumb { width:80px; height:80px; border-radius:12px; overflow:hidden; background:#e2e8f0; flex:none; display:flex; align-items:center; justify-content:center; font-size:12px; color:#64748b; }
   .progress { height:8px; background:rgba(148,163,184,.35); border-radius:9999px; overflow:hidden; }
@@ -257,6 +265,10 @@
           </div>
           <a id="downloadZip" class="btn btn-ghost tap" target="_blank" rel="noopener">下載全部（ZIP）</a>
         </div>
+      </div>
+      <div id="v-desc-wrap" class="viewer-desc-wrap hidden">
+        <div class="text-sm font-semibold text-slate-700 mb-2">案件說明</div>
+        <div id="v-desc" class="viewer-desc-box"></div>
       </div>
       <div id="gallery" class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4"></div>
 
@@ -1282,20 +1294,84 @@
           const s=document.createElement('span'); s.className='chip'; s.textContent='#'+t; tagsBox.appendChild(s);
         });
 
+        const descWrap = $('#v-desc-wrap');
+        const descEl = $('#v-desc');
+        const descText = (d.desc || '').toString().trim();
+        if (descText) {
+          descEl.textContent = descText;
+          descWrap.classList.remove('hidden');
+        } else {
+          descEl.textContent = '';
+          descWrap.classList.add('hidden');
+        }
+
         const g=$('#gallery'); g.innerHTML=''; lbItems=[];
-        (d.items||[]).forEach((it,i)=>{
+        function makePhotoCard(it){
           const full = lightboxUrl(it.url||'');
           const thumb = galleryUrl(it.url||'');
-          const caption = it.caption || ('照片 '+(i+1));
+          const caption = it.caption || ('照片 '+(lbItems.length+1));
+          const idx = lbItems.length;
           lbItems.push({ full, caption });
-          const card=document.createElement('div'); card.className='card overflow-hidden';
-          card.innerHTML=`
-            <button class="w-full group" data-idx="${i}">
-              <img decoding="async" src="${thumb}" class="w-full h-auto object-contain" loading="lazy" alt="照片 ${i+1}"/>
-            </button>
-            <div class="p-3 text-base text-slate-700">${caption}</div>`;
-          g.appendChild(card);
-        });
+
+          const card=document.createElement('div');
+          card.className='card overflow-hidden';
+
+          const btn=document.createElement('button');
+          btn.type='button';
+          btn.className='w-full group';
+          btn.dataset.idx=String(idx);
+
+          const img=document.createElement('img');
+          img.decoding='async';
+          img.src=thumb;
+          img.className='w-full h-auto object-contain';
+          img.loading='lazy';
+          img.alt='照片 '+(idx+1);
+          btn.appendChild(img);
+
+          const cap=document.createElement('div');
+          cap.className='p-3 text-base text-slate-700';
+          cap.textContent=caption;
+
+          card.appendChild(btn);
+          card.appendChild(cap);
+          return card;
+        }
+
+        const hasGroups = Array.isArray(d.groups) && d.groups.some(group => Array.isArray(group.items) && group.items.length);
+        if (hasGroups) {
+          d.groups.forEach(group=>{
+            const groupItems = Array.isArray(group.items) ? group.items.filter(it => it && it.url) : [];
+            if (!groupItems.length) return;
+
+            const section=document.createElement('section');
+            section.className='viewer-group-section';
+
+            const head=document.createElement('div');
+            head.className='viewer-group-head';
+            const title=document.createElement('h3');
+            title.textContent = group.title || [group.floor, group.place, group.type].filter(Boolean).join('-') || '設備/區域照片';
+            head.appendChild(title);
+
+            const noteText = (group.note || '').toString().trim();
+            if (noteText) {
+              const note=document.createElement('p');
+              note.textContent = noteText;
+              head.appendChild(note);
+            }
+            section.appendChild(head);
+
+            const inner=document.createElement('div');
+            inner.className='viewer-group-grid';
+            groupItems.forEach(it=> inner.appendChild(makePhotoCard(it)));
+            section.appendChild(inner);
+            g.appendChild(section);
+          });
+        } else {
+          (Array.isArray(d.items) ? d.items : []).forEach(it=>{
+            if (it && it.url) g.appendChild(makePhotoCard(it));
+          });
+        }
 
         $$('#gallery button').forEach(btn=>{
           btn.addEventListener('click', ()=> openLightbox(parseInt(btn.dataset.idx,10) || 0), {passive:true});
