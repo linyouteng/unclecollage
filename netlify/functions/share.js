@@ -1,5 +1,5 @@
 // /.netlify/functions/share.js
-// Dynamic Open Graph preview page for sharing /p/<slug>
+// Dynamic Open Graph preview page for sharing /<slug> (legacy /p/<slug> remains supported)
 // - Works for link preview crawlers (LINE/iMessage) because OG tags exist in raw HTML
 // - Redirects human visitors to post.html?slug=...
 
@@ -19,7 +19,8 @@ function extractSlugFromPath(pathname) {
   const clean = pathname.split('?')[0].split('#')[0];
 
   // Accept both:
-  // - /p/<slug>
+  // - /<slug>
+  // - /p/<slug> (legacy)
   // - /.netlify/functions/share/<slug>
   const m1 = clean.match(/\/p\/([^\/]+)/i);
   if (m1 && m1[1]) return safeDecode(m1[1]);
@@ -27,9 +28,13 @@ function extractSlugFromPath(pathname) {
   const m2 = clean.match(/\/share\/([^\/]+)/i);
   if (m2 && m2[1]) return safeDecode(m2[1]);
 
-  // Fallback: last segment (e.g., when rewrite uses :splat but path keeps original)
+  // Fallback: the clean one-segment public route /<slug>.
+  // Ignore known static/function route prefixes so assets never become slugs.
   const parts = clean.split('/').filter(Boolean);
   if (parts.length >= 2 && parts[0].toLowerCase() === 'p') return safeDecode(parts[1]);
+  if (parts.length === 1 && !/^(index|gallery|post|assets|logo|favicon|\.netlify)$/i.test(parts[0])) {
+    return safeDecode(parts[0]);
+  }
   return '';
 }
 
@@ -90,7 +95,7 @@ export const handler = async (event) => {
   const host = pickHeader(event.headers, 'host') || '';
   const origin = host ? `${proto}://${host}` : '';
 
-  const shareUrl = origin ? `${origin}/p/${encodeURIComponent(slug)}${showDates ? `?showDates=${encodeURIComponent(showDates)}` : ''}` : '';
+  const shareUrl = origin ? `${origin}/${encodeURIComponent(slug)}${showDates ? `?showDates=${encodeURIComponent(showDates)}` : ''}` : '';
   const targetUrl = origin
     ? `${origin}/post.html?slug=${encodeURIComponent(slug)}${showDates ? `&showDates=${encodeURIComponent(showDates)}` : ''}`
     : `/post.html?slug=${encodeURIComponent(slug)}${showDates ? `&showDates=${encodeURIComponent(showDates)}` : ''}`;

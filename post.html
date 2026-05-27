@@ -399,7 +399,7 @@ function render(slug, data){
       const sp0 = new URL(location.href).searchParams;
       const showDates0 = sp0.get('showDates') === '1';
       const basePath0 = location.pathname.replace(/\/post\.html$/,'');
-      const shareUrl = location.origin + basePath0 + '/p/' + encodeURIComponent(slug0 || '') + (showDates0 ? '?showDates=1' : '');
+      const shareUrl = location.origin + basePath0 + '/' + encodeURIComponent(slug0 || '') + (showDates0 ? '?showDates=1' : '');
       const title = (qsel('title') && qsel('title').textContent) || document.title || '分享';
       try{
         if (navigator.share){ await navigator.share({ title, url: shareUrl }); }

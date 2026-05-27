@@ -13,3 +13,10 @@
   from = "/p/*"
   to = "/.netlify/functions/share/:splat"
   status = 200
+
+# New short public link format, for example: /20260528-001
+# Existing files such as /index.html and /gallery.html continue to be served normally.
+[[redirects]]
+  from = "/:slug"
+  to = "/.netlify/functions/share/:slug"
+  status = 200

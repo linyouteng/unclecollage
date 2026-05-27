@@ -238,7 +238,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
       <div><label class="block text-sm mb-1 text-slate-600">標籤（選填）</label><input id="tags" class="input" placeholder="以逗號分隔，例如：冷氣, 住家"/></div>
-      <div><label class="block text-sm mb-1 text-slate-600">自訂網址代稱（選填）</label><input id="slug" class="input" placeholder="例如：wang-2025-09"/></div>
+      <div><label class="block text-sm mb-1 text-slate-600">網址代碼（選填）</label><input id="slug" class="input" placeholder="留空自動產生，例如：20260528-001"/></div>
     <div class="mt-2 flex items-center gap-2 text-xs text-slate-600">
       <input id="hidden" type="checkbox" class="w-4 h-4 border-slate-300 rounded"/>
       <label for="hidden">建立後先設為「隱藏」，不在作品清單中公開顯示</label>
@@ -342,6 +342,26 @@
     const fileSizeMB=file=>file ? (file.size/1024/1024).toFixed(2) : '0.00';
     const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     const slugify=s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+    function dateSlugPrefix(dateValue){
+      const compact = String(dateValue || getTodayDateValue()).replace(/[^0-9]/g, '');
+      return /^\d{8}$/.test(compact) ? compact : String(getTodayDateValue()).replace(/-/g, '');
+    }
+    async function generateDateSequenceSlug(dateValue, token){
+      const prefix = dateSlugPrefix(dateValue);
+      const url = new URL('/.netlify/functions/list-posts', location.origin);
+      url.searchParams.set('showHidden', '1');
+      const resp = await fetch(url.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
+      if (!resp.ok) throw new Error('無法取得現有案件流水號，請重新登入後再試');
+      const data = await resp.json();
+      const items = Array.isArray(data.items) ? data.items : [];
+      const pattern = new RegExp('^' + prefix + '-(\\d+)$');
+      let maxSeq = 0;
+      items.forEach(item => {
+        const match = String(item.slug || '').match(pattern);
+        if (match) maxSeq = Math.max(maxSeq, Number(match[1]) || 0);
+      });
+      return prefix + '-' + String(maxSeq + 1).padStart(3, '0');
+    }
     let editingSlug = null;
     let editingRecord = null;
     function showCopyToast(msg = '已複製連結！') {
@@ -1091,9 +1111,10 @@
       const checkedCoverIndex = rows.findIndex(row => row.querySelector('.cover-radio')?.checked);
       const coverIndex = checkedCoverIndex >= 0 ? checkedCoverIndex : 0;
       if(editingSlug) slug = editingSlug;
-      if(!slug) slug=slugify((title||'case')+'-'+Date.now().toString().slice(-6));
 
       try{
+        if(!slug) slug = await generateDateSequenceSlug(date, token);
+
         setBar(0); setProgress(editingSlug ? '準備更新…' : '準備上傳…');
         const folder=`collages/${slug}`;
         const items=[]; const groups=[]; let done=0;
@@ -1151,7 +1172,7 @@
         if(!resp.ok || !data.ok) throw new Error(data.error || (editingSlug ? '更新失敗' : '建立失敗'));
 
         const basePath = location.pathname.replace(/index\.html$/,'').replace(/\/$/,'');
-        const shareUrl = location.origin + basePath + '/p/' + encodeURIComponent(data.slug) + '?showDates=1';
+        const shareUrl = location.origin + basePath + '/' + encodeURIComponent(data.slug) + '?showDates=1';
         $('#share-url').value = shareUrl;
         $('#share-link').classList.remove('hidden');
         $('#copy-link').onclick = () =>
@@ -1418,7 +1439,7 @@
 
         const just = sessionStorage.getItem('justCreated') === '1';
         const basePath = location.pathname.replace(/index\.html$/,'').replace(/\/$/,'');
-        const shareUrl = location.origin + basePath + '/p/' + encodeURIComponent(slug) + '?showDates=1';
+        const shareUrl = location.origin + basePath + '/' + encodeURIComponent(slug) + '?showDates=1';
         if (just) {
           $('#share-url').value = shareUrl;
           $('#share-link').classList.remove('hidden');
