@@ -265,7 +265,7 @@ function initLightbox(images){
     const it = LB_IMAGES[LB_INDEX] || {};
     img.src = it.url || '';
     img.alt = it.alt || '';
-    cap.textContent = it.caption || it.alt || '';
+    cap.textContent = it.caption || '';
     count.textContent = (LB_INDEX+1) + ' / ' + LB_IMAGES.length;
   }
   window.openLightbox = function(i){
@@ -420,7 +420,7 @@ function render(slug, data){
     const link = document.createElement('a'); link.href = it.url; link.addEventListener('click', function(e){ e.preventDefault(); openLightbox(globalIndex >= 0 ? globalIndex : 0); });
     const img = document.createElement('img'); img.loading = 'lazy'; img.alt = it.alt || ''; img.src = it.url;
     link.appendChild(img); card.appendChild(link);
-    const cap = document.createElement('div'); cap.className = 'cap'; cap.textContent = it.caption || it.alt || '';
+    const cap = document.createElement('div'); cap.className = 'cap'; cap.textContent = it.caption || '';
     card.appendChild(cap);
     parent.appendChild(card);
   }
@@ -434,8 +434,10 @@ function render(slug, data){
       const h2 = document.createElement('h2'); h2.textContent = group.title || [group.floor, group.place, group.type].filter(Boolean).join('-') || '設備/區域照片';
       head.appendChild(h2);
       const metaText = [group.floor, group.place, group.type].filter(Boolean).join('｜');
-      const noteText = group.note ? String(group.note) : '';
-      if(metaText || noteText){ const p=document.createElement('p'); p.textContent = [metaText, noteText].filter(Boolean).join('　'); head.appendChild(p); }
+      const equipmentText = [group.brand ? '品牌：' + group.brand : '', group.model ? '機型／型號：' + group.model : ''].filter(Boolean).join('｜');
+      const noteText = group.deviceNote || group.note ? '設備備註：' + String(group.deviceNote || group.note) : '';
+      const detailLines = [metaText, equipmentText, noteText].filter(Boolean);
+      if(detailLines.length){ const p=document.createElement('p'); p.textContent = detailLines.join('\n'); p.style.whiteSpace = 'pre-line'; head.appendChild(p); }
       const inner = document.createElement('div'); inner.className = 'grid';
       groupItems.forEach(function(it){ renderPhotoCard(inner, it); });
       wrap.appendChild(head); wrap.appendChild(inner); grid.appendChild(wrap);

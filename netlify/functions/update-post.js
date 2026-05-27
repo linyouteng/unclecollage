@@ -117,6 +117,9 @@ export default async (request) => {
       floor: item.floor ? String(item.floor) : '',
       place: item.place ? String(item.place) : '',
       type: item.type ? String(item.type) : '',
+      brand: item.brand ? String(item.brand) : '',
+      model: item.model ? String(item.model) : '',
+      deviceNote: item.deviceNote ? String(item.deviceNote) : '',
     }));
 
   const normalizedGroups = Array.isArray(groups)
@@ -126,7 +129,10 @@ export default async (request) => {
         floor: group?.floor ? String(group.floor) : '',
         place: group?.place ? String(group.place) : '',
         type: group?.type ? String(group.type) : '',
-        note: group?.note ? String(group.note) : '',
+        brand: group?.brand ? String(group.brand) : '',
+        model: group?.model ? String(group.model) : '',
+        deviceNote: group?.deviceNote ? String(group.deviceNote) : (group?.note ? String(group.note) : ''),
+        note: group?.deviceNote ? String(group.deviceNote) : (group?.note ? String(group.note) : ''),
         items: Array.isArray(group?.items)
           ? group.items.filter((item) => item && item.url).map((item) => ({
               url: String(item.url),
@@ -136,6 +142,9 @@ export default async (request) => {
               floor: item.floor ? String(item.floor) : (group?.floor ? String(group.floor) : ''),
               place: item.place ? String(item.place) : (group?.place ? String(group.place) : ''),
               type: item.type ? String(item.type) : (group?.type ? String(group.type) : ''),
+              brand: item.brand ? String(item.brand) : (group?.brand ? String(group.brand) : ''),
+              model: item.model ? String(item.model) : (group?.model ? String(group.model) : ''),
+              deviceNote: item.deviceNote ? String(item.deviceNote) : (group?.deviceNote ? String(group.deviceNote) : (group?.note ? String(group.note) : '')),
             }))
           : [],
       }))

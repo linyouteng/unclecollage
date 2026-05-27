@@ -228,7 +228,7 @@
 
     <div class="mt-4">
       <label class="block text-sm mb-2 text-slate-600">設備/區域群組照片</label>
-      <p class="text-xs text-slate-500 mb-3">先建立一台冷氣、洗衣機或水塔群組，只要在群組填一次樓層、所在類型、清洗類別與說明，該群組內照片會共用這些資訊；照片也可以另外補單張說明。</p>
+      <p class="text-xs text-slate-500 mb-3">先建立一台冷氣、洗衣機或水塔群組，只要在群組填一次樓層、安裝位置、清洗類別、品牌、機型／型號與設備備註，該群組內照片會共用這些資訊；照片也可以另外補單張說明。</p>
       <div id="items" class="space-y-4"></div>
       <div class="flex flex-wrap gap-2 mt-2">
         <button id="addGroup" class="btn btn-ghost tap">＋ 新增一個設備/區域</button>
@@ -751,9 +751,15 @@
       const placeCustom = group.querySelector('.place-custom');
       const typeSel = group.querySelector('.type-select');
       const typeCustom = group.querySelector('.type-custom');
+      const brandSel = group.querySelector('.brand-select');
+      const brandCustom = group.querySelector('.brand-custom');
+      const modelSel = group.querySelector('.model-select');
+      const modelCustom = group.querySelector('.model-custom');
       floorSel?.addEventListener('change', ()=>toggleCustomSelect(floorSel, floorCustom, 'custom-floor'));
       placeSel?.addEventListener('change', ()=>toggleCustomSelect(placeSel, placeCustom, 'custom-place'));
       typeSel?.addEventListener('change', ()=>toggleCustomSelect(typeSel, typeCustom, 'custom-type'));
+      brandSel?.addEventListener('change', ()=>toggleCustomSelect(brandSel, brandCustom, 'custom-brand'));
+      modelSel?.addEventListener('change', ()=>toggleCustomSelect(modelSel, modelCustom, 'custom-model'));
     }
 
     function getSelectOrCustom(root, selectClass, customClass, customValue){
@@ -766,25 +772,27 @@
       const floor = getSelectOrCustom(group, '.floor-select', '.floor-custom', 'custom-floor');
       const place = getSelectOrCustom(group, '.place-select', '.place-custom', 'custom-place');
       const type = getSelectOrCustom(group, '.type-select', '.type-custom', 'custom-type');
-      const note = (group.querySelector('.group-note')?.value || '').trim();
+      const brand = getSelectOrCustom(group, '.brand-select', '.brand-custom', 'custom-brand');
+      const model = getSelectOrCustom(group, '.model-select', '.model-custom', 'custom-model');
+      const deviceNote = (group.querySelector('.device-note')?.value || '').trim();
       const parts = []; if(floor) parts.push(floor); if(place) parts.push(place); if(type) parts.push(type);
       return {
         id: group.dataset.groupId || ('group-' + Date.now()),
         floor,
         place,
         type,
-        note,
-        title: parts.join('-') || note || '未命名設備/區域'
+        brand,
+        model,
+        deviceNote,
+        // note 同步保留，避免既有流程或舊版頁面無法讀取設備備註
+        note: deviceNote,
+        title: parts.join('-') || brand || model || deviceNote || '未命名設備/區域'
       };
     }
 
-    function getRowCaption(row, sep='-'){
-      const manual = (row.querySelector('.caption-input')?.value || '').trim();
-      if (manual) return manual;
-      const group = row.closest('.group-card');
-      if (!group) return '';
-      const meta = getGroupMeta(group);
-      return meta.title || [meta.floor, meta.place, meta.type].filter(Boolean).join(sep);
+    function getRowCaption(row){
+      // 單張照片說明未填寫時維持空白，不再自動套用群組文字。
+      return (row.querySelector('.caption-input')?.value || '').trim();
     }
 
     function setGroupValues(group, meta={}){
@@ -800,7 +808,10 @@
       setSelect('.floor-select','.floor-custom','custom-floor', meta.floor);
       setSelect('.place-select','.place-custom','custom-place', meta.place);
       setSelect('.type-select','.type-custom','custom-type', meta.type);
-      const note=group.querySelector('.group-note'); if(note) note.value=meta.note || '';
+      setSelect('.brand-select','.brand-custom','custom-brand', meta.brand);
+      setSelect('.model-select','.model-custom','custom-model', meta.model);
+      const deviceNote=group.querySelector('.device-note');
+      if(deviceNote) deviceNote.value=meta.deviceNote || meta.note || '';
     }
 
     function refreshCoverState(){
@@ -851,13 +862,13 @@
             <input class="input mt-1 floor-custom hidden" placeholder="請輸入樓層（例如：6F、7F…）"/>
           </div>
           <div>
-            <label class="block text-xs mb-1 text-slate-600">所在類型</label>
+            <label class="block text-xs mb-1 text-slate-600">安裝位置</label>
             <select class="input place-select">
-              <option value="" disabled selected>請選擇所在類型</option>
+              <option value="" disabled selected>請選擇安裝位置</option>
               <option>客廳</option><option>房間</option><option>廚房</option><option>陽台</option><option>頂樓</option>
               <option value="custom-place">其他（手動輸入）</option>
             </select>
-            <input class="input mt-1 place-custom hidden" placeholder="請輸入所在類型"/>
+            <input class="input mt-1 place-custom hidden" placeholder="請輸入安裝位置"/>
           </div>
           <div>
             <label class="block text-xs mb-1 text-slate-600">清洗類別</label>
@@ -870,9 +881,31 @@
             <input class="input mt-1 type-custom hidden" placeholder="請輸入清洗類別"/>
           </div>
         </div>
+        <div class="grid md:grid-cols-2 gap-2 mt-2">
+          <div>
+            <label class="block text-xs mb-1 text-slate-600">品牌（選填）</label>
+            <select class="input brand-select">
+              <option value="" selected>未填寫</option>
+              <option>國際牌 Panasonic</option><option>日立 HITACHI</option><option>大金 DAIKIN</option>
+              <option>三菱 Mitsubishi</option><option>東元 TECO</option><option>聲寶 SAMPO</option>
+              <option>禾聯 HERAN</option><option>LG</option><option>Samsung</option><option>Whirlpool 惠而浦</option>
+              <option>不清楚</option><option value="custom-brand">其他品牌（手動輸入）</option>
+            </select>
+            <input class="input mt-1 brand-custom hidden" placeholder="請輸入品牌" />
+          </div>
+          <div>
+            <label class="block text-xs mb-1 text-slate-600">機型／型號（選填）</label>
+            <select class="input model-select">
+              <option value="" selected>未填寫</option>
+              <option>變形金剛</option><option>一體式水盤</option><option>加長</option>
+              <option>不清楚</option><option value="custom-model">其他機型／型號（手動輸入）</option>
+            </select>
+            <input class="input mt-1 model-custom hidden" placeholder="請輸入機型／型號" />
+          </div>
+        </div>
         <div class="mt-2">
-          <label class="block text-xs mb-1 text-slate-600">此設備/區域說明（選填）</label>
-          <input class="input group-note" placeholder="例：客廳冷氣，風鼓灰塵較厚、出風口有黑垢" />
+          <label class="block text-xs mb-1 text-slate-600">設備備註（選填）</label>
+          <input class="input device-note" placeholder="例：陽台右側第二台、機身標籤模糊、與主臥同組室外機" />
         </div>
         <div class="group-items mt-3"></div>
         <div class="group-tools">
@@ -917,11 +950,11 @@
               <span class="cover-hint hidden rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">目前封面</span>
             </div>
             <input type="file" accept="image/*" class="input p-2" aria-label="選擇圖片" />
-            <div class="upload-note">此照片會套用上方群組資訊；需要單張補充時可填下方照片說明。</div>
+            <div class="upload-note">照片會歸類於上方設備群組；需要單張補充時再填寫下方說明。</div>
             <div class="upload-status" aria-live="polite"></div>
             <div>
               <label class="block text-xs mb-1 text-slate-600">單張照片說明（選填）</label>
-              <input class="input caption-input" placeholder="留空會自動使用此群組的：樓層-所在類型-清洗類別" />
+              <input class="input caption-input" placeholder="例：清洗前／清洗後／風鼓髒污近照；留空則不顯示文字" />
             </div>
           </div>
         </div>
@@ -1094,7 +1127,7 @@
               setProgress(`保留原圖… ${done+1} / ${rows.length}`);
               row._setUploadStatus?.('保留原本圖片', 'ok');
             }
-            const item = { url, caption, groupId: groupMeta.id, groupTitle: groupMeta.title, floor: groupMeta.floor, place: groupMeta.place, type: groupMeta.type };
+            const item = { url, caption, groupId: groupMeta.id, groupTitle: groupMeta.title, floor: groupMeta.floor, place: groupMeta.place, type: groupMeta.type, brand: groupMeta.brand, model: groupMeta.model, deviceNote: groupMeta.deviceNote };
             groupItems.push(item);
             items.push(item);
             done++; setBar(done/rows.length*100);
@@ -1211,8 +1244,8 @@
           const groupItemsBox = group.querySelector('.group-items');
           if (groupItemsBox) groupItemsBox.innerHTML = '';
           (Array.isArray(d.items) ? d.items : []).forEach((item, index)=>{
-            const groupMeta = { floor:item.floor || '', place:item.place || '', type:item.type || '', note:item.groupTitle || '' };
-            if(index === 0 && (groupMeta.floor || groupMeta.place || groupMeta.type || groupMeta.note)) setGroupValues(group, groupMeta);
+            const groupMeta = { floor:item.floor || '', place:item.place || '', type:item.type || '', brand:item.brand || '', model:item.model || '', deviceNote:item.deviceNote || item.groupTitle || '' };
+            if(index === 0 && (groupMeta.floor || groupMeta.place || groupMeta.type || groupMeta.deviceNote)) setGroupValues(group, groupMeta);
             const row = addItemRow(null, group);
             row._setExistingItem(item || {});
             const radio = row.querySelector('.cover-radio');
@@ -1309,7 +1342,7 @@
         function makePhotoCard(it){
           const full = lightboxUrl(it.url||'');
           const thumb = galleryUrl(it.url||'');
-          const caption = it.caption || ('照片 '+(lbItems.length+1));
+          const caption = (it.caption || '').trim();
           const idx = lbItems.length;
           lbItems.push({ full, caption });
 
@@ -1353,10 +1386,14 @@
             title.textContent = group.title || [group.floor, group.place, group.type].filter(Boolean).join('-') || '設備/區域照片';
             head.appendChild(title);
 
-            const noteText = (group.note || '').toString().trim();
-            if (noteText) {
+            const details = [];
+            if (group.brand) details.push('品牌：' + group.brand);
+            if (group.model) details.push('機型／型號：' + group.model);
+            const noteText = (group.deviceNote || group.note || '').toString().trim();
+            if (noteText) details.push('設備備註：' + noteText);
+            if (details.length) {
               const note=document.createElement('p');
-              note.textContent = noteText;
+              note.textContent = details.join('｜');
               head.appendChild(note);
             }
             section.appendChild(head);
