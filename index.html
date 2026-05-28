@@ -54,6 +54,11 @@
   .caption-suggestion-btn { border-style:dashed; background:#f8fafc; }
   .caption-suggestion-btn:hover { background:#e2e8f0; }
   .caption-empty-note { font-size:12px; color:#94a3b8; }
+  .case-desc-assist { border:1px solid rgba(148,163,184,.32); background:rgba(248,250,252,.85); border-radius:.9rem; padding:.75rem; }
+  .case-desc-style-btn, .case-desc-suggestion-btn { font-size:12px; line-height:1.45; padding:.4rem .65rem; border-radius:9999px; border:1px solid rgba(148,163,184,.48); background:#fff; color:#334155; text-align:left; }
+  .case-desc-style-btn.is-active { background:#0f172a; border-color:#0f172a; color:#fff; }
+  .case-desc-suggestion-btn { display:block; width:100%; border-style:dashed; border-radius:.8rem; background:#fff; text-align:left; }
+  .case-desc-suggestion-btn:hover { background:#e2e8f0; }
 
   /* Lightbox */
   .lightbox { position:fixed; inset:0; background:rgba(0,0,0,.9); display:none; align-items:center; justify-content:center; z-index:60; padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 72px); }
@@ -187,9 +192,26 @@
 
     <div class="mt-4">
       <label class="block text-sm mb-1 text-slate-600">案件說明（選填）</label>
-      <textarea id="desc" class="input" rows="4" placeholder="例：頂樓水塔多年未清洗，本次重點是除泥沙與消毒…"></textarea>
+      <textarea id="desc" class="input" rows="4" placeholder="可依下方服務項目快速套用說明，套用後仍可自行調整內容。"></textarea>
+      <div id="case-desc-assist" class="case-desc-assist mt-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <div>
+            <div class="text-xs font-bold text-slate-700">依服務項目快速套用</div>
+            <div id="case-desc-current-services" class="text-[11px] text-slate-500">請先於下方選擇標籤。</div>
+          </div>
+        </div>
+        <div class="text-[11px] text-slate-500 mb-1">說明風格</div>
+        <div id="case-desc-styles" class="flex flex-wrap gap-2 mb-3">
+          <button type="button" class="case-desc-style-btn is-active" data-style="concise">簡潔版</button>
+          <button type="button" class="case-desc-style-btn" data-style="professional">專業版</button>
+          <button type="button" class="case-desc-style-btn" data-style="friendly">親切版</button>
+          <button type="button" class="case-desc-style-btn" data-style="maintenance">保養提醒</button>
+        </div>
+        <div class="text-[11px] text-slate-500 mb-1">快速套用說明</div>
+        <div id="case-desc-suggestions" class="grid gap-2"></div>
+      </div>
       <div class="mt-2 flex flex-wrap items-center gap-1 text-[11px] text-slate-500">
-        <span class="mr-1">快速插入常用說明：</span>
+        <span class="mr-1">其他自訂常用範本：</span>
         <div id="desc-template-list" class="flex flex-wrap items-center gap-1"></div>
         <button type="button" id="manage-desc-templates" class="btn-desc-template btn-desc-template-manage">管理範本</button>
       </div>
@@ -389,6 +411,110 @@
         return true;
       });
     }
+    const CASE_DESC_SERVICE_MAP = {
+      '冷氣': '冷氣室內機',
+      '直立式洗衣機': '直立式洗衣機',
+      '水塔': '水塔',
+      '自來水管線': '自來水管線'
+    };
+    const CASE_DESC_SINGLE_PRESETS = {
+      '冷氣': {
+        concise: ['本次完成冷氣室內機清洗保養，並整理清洗前後對比照片，方便您查看本次清潔成果。', '本次冷氣室內機清潔已完成，施工前後成果照片整理如下，供您日後參考。'],
+        professional: ['本次針對冷氣室內機進行清洗保養，包含內部重點藏污區域與相關零件清潔，施工前後對比照片已整理留存。', '本次完成冷氣室內機清潔作業，重點區域處理前後狀況均以照片記錄，方便確認清潔成果。'],
+        friendly: ['冷氣清洗服務已完成，以下整理本次施工前後對比照片，讓您清楚查看設備清潔後的狀況。', '本次冷氣已清潔完成，前後成果照片為您整理留存，日後查看也更方便。'],
+        maintenance: ['本次已完成冷氣室內機清洗保養。建議後續依使用頻率與環境狀況定期清潔，以維持設備整潔與使用品質。', '冷氣室內機本次清潔已完成，日後可依使用情況安排定期保養，減少內部髒污長期累積。']
+      },
+      '直立式洗衣機': {
+        concise: ['本次完成直立式洗衣機拆洗保養，並整理內部清洗前後對比照片，方便您查看清潔成果。', '直立式洗衣機本次拆洗已完成，相關施工前後照片整理如下供您參考。'],
+        professional: ['本次針對直立式洗衣機進行拆洗清潔，包含洗衣槽、內部藏污區域與相關零件處理，施工前後對比照片已整理留存。', '本次完成直立式洗衣機內部拆洗作業，重點清潔區域處理前後狀況均已拍攝記錄。'],
+        friendly: ['洗衣機拆洗服務已完成，以下為本次清洗前後對比照片，讓您清楚了解內部清潔成果。', '本次洗衣機已完成清潔，施工成果照片為您整理留存，方便日後查看。'],
+        maintenance: ['本次已完成直立式洗衣機拆洗保養。洗衣機內部容易因長期使用累積髒污，建議依使用情況定期安排清潔。', '直立式洗衣機內部清潔已完成，日後可視使用頻率定期拆洗保養，以維持內槽整潔。']
+      },
+      '水塔': {
+        concise: ['本次完成水塔內部清洗保養，並整理清洗前後對比照片，方便您查看本次清潔成果。', '水塔內部本次清潔已完成，施工前後成果照片整理如下供您參考。'],
+        professional: ['本次針對水塔內部進行清洗作業，包含塔底沉積物與內壁髒污處理，施工前後對比照片已完整整理。', '本次完成水塔內部清潔，重點區域處理前後狀況均已拍攝留存，方便確認清洗成果。'],
+        friendly: ['水塔清洗已完成，以下整理本次施工前後照片，讓您查看內部清潔後的狀況。', '本次水塔已完成清潔，前後成果照片為您整理留存，方便日後查看。'],
+        maintenance: ['本次已完成水塔內部清洗保養。為維持日常用水設備整潔，建議依使用狀況定期進行清潔與檢查。', '水塔本次清潔已完成，後續可依用水環境與使用情況安排定期清洗保養。']
+      },
+      '自來水管線': {
+        concise: ['本次完成自來水管線清洗服務，相關施工前後紀錄已整理留存，方便您日後查看。', '自來水管線本次清洗已完成，施工成果照片整理如下供您參考。'],
+        professional: ['本次針對自來水管線進行清洗作業，相關處理過程與完成後狀況均已透過照片整理紀錄。', '本次完成自來水管線清洗服務，施工前後成果已記錄留存，供您確認本次服務內容。'],
+        friendly: ['自來水管線清洗已完成，以下整理本次服務照片，方便您查看處理後的成果。', '本次管線清洗服務已完成，相關照片為您整理留存，日後查看更方便。'],
+        maintenance: ['本次已完成自來水管線清洗服務。建議後續依用水狀況與設備情形安排檢查或保養。', '自來水管線本次處理已完成，日後可依實際用水情況留意水質與管線狀態。']
+      }
+    };
+    let activeCaseDescStyle = 'concise';
+    function getCaseDescServices(){
+      return parseTags($('#tags')?.value || '').filter(tag => Object.prototype.hasOwnProperty.call(CASE_DESC_SERVICE_MAP, tag));
+    }
+    function getCaseDescSuggestions(style, services){
+      if(!services.length) return [];
+      if(services.length === 1) return CASE_DESC_SINGLE_PRESETS[services[0]]?.[style] || [];
+      const names = services.map(service => CASE_DESC_SERVICE_MAP[service]);
+      const label = names.join('、');
+      const cleaningLabel = services.includes('直立式洗衣機') ? '清洗及拆洗保養' : '清洗保養';
+      const joinedAction = services.map(service => {
+        if(service === '冷氣') return '冷氣室內機清潔';
+        if(service === '直立式洗衣機') return '直立式洗衣機拆洗';
+        if(service === '水塔') return '水塔內部清洗';
+        return '自來水管線清洗';
+      }).join('、');
+      const options = {
+        concise: [
+          `本次完成${label}${cleaningLabel}，相關施工前後對比照片已整理留存，方便您查看各項服務的清潔成果。`,
+          `本次服務項目包含${label}，施工完成後的前後成果照片整理如下供您參考。`
+        ],
+        professional: [
+          `本次服務項目包含${joinedAction}，針對各設備重點區域進行處理，施工前後對比照片已完整整理供您參考。`,
+          `本次完成${label}相關清潔作業，重點清潔區域及完工成果均已透過照片記錄留存。`
+        ],
+        friendly: [
+          `${label}清洗服務已完成，以下整理本次施工前後對比照片，方便您查看各項清潔成果。`,
+          `本次多項清潔服務已完成，${label}的前後成果照片已為您整理留存，日後查看更方便。`
+        ],
+        maintenance: [
+          `本次已完成${label}清洗保養。建議後續依設備使用頻率與環境狀況定期安排清潔，以維持設備整潔與使用品質。`,
+          `${label}本次服務已完成，後續可依實際使用狀況定期檢查與保養，相關施工照片已整理留存。`
+        ]
+      };
+      return options[style] || options.concise;
+    }
+    function refreshCaseDescSuggestions(){
+      const list = $('#case-desc-suggestions');
+      const status = $('#case-desc-current-services');
+      if(!list || !status) return;
+      const services = getCaseDescServices();
+      $$('.case-desc-style-btn').forEach(btn => btn.classList.toggle('is-active', btn.dataset.style === activeCaseDescStyle));
+      list.innerHTML = '';
+      if(!services.length){
+        status.textContent = '請先於下方標籤點選冷氣、直立式洗衣機、水塔或自來水管線。';
+        const empty = document.createElement('div');
+        empty.className = 'caption-empty-note';
+        empty.textContent = '選擇服務項目後，這裡會提供符合本案的整體說明。';
+        list.appendChild(empty);
+        return;
+      }
+      status.textContent = '目前服務項目：' + services.map(service => CASE_DESC_SERVICE_MAP[service]).join('、');
+      getCaseDescSuggestions(activeCaseDescStyle, services).forEach(text => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'case-desc-suggestion-btn';
+        btn.textContent = text;
+        btn.addEventListener('click', () => {
+          const textarea = $('#desc');
+          if(textarea){ textarea.value = text; textarea.focus(); }
+        });
+        list.appendChild(btn);
+      });
+    }
+    function initCaseDescAssistant(){
+      $$('.case-desc-style-btn').forEach(btn => btn.addEventListener('click', () => {
+        activeCaseDescStyle = btn.dataset.style || 'concise';
+        refreshCaseDescSuggestions();
+      }));
+      refreshCaseDescSuggestions();
+    }
+
     function syncQuickTagButtons(tags){
       const normalized = Array.isArray(tags) ? tags : parseTags(tags);
       $$('.tag-quick-btn').forEach(btn => {
@@ -404,6 +530,7 @@
       const normalized = Array.isArray(tags) ? tags : parseTags(tags);
       input.value = normalized.join('、');
       syncQuickTagButtons(normalized);
+      refreshCaseDescSuggestions();
     }
     function initQuickTags(){
       const input = $('#tags');
@@ -414,12 +541,13 @@
         const next = tags.includes(chosen) ? tags.filter(tag => tag !== chosen) : [...tags, chosen];
         setTags(next);
       }));
-      input.addEventListener('input', () => syncQuickTagButtons(parseTags(input.value)));
+      input.addEventListener('input', () => { syncQuickTagButtons(parseTags(input.value)); refreshCaseDescSuggestions(); });
       input.addEventListener('change', () => setTags(parseTags(input.value)));
       input.addEventListener('blur', () => setTags(parseTags(input.value)));
       setTags(input.value);
     }
     initQuickTags();
+    initCaseDescAssistant();
     function showCopyToast(msg = '已複製連結！') {
       const el = $('#copy-toast');
       if (!el) return;
