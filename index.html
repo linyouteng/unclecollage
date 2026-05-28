@@ -47,6 +47,13 @@
   .upload-status.ok { color:#047857; }
   .upload-status.warn { color:#b45309; }
   .upload-status.error { color:#b91c1c; }
+  .caption-assist { border:1px solid rgba(148,163,184,.32); background:rgba(248,250,252,.85); border-radius:.85rem; padding:.65rem .7rem; }
+  .caption-assist-title { font-size:11px; color:#64748b; margin-bottom:.4rem; font-weight:700; }
+  .caption-focus-btn, .caption-suggestion-btn { font-size:12px; line-height:1.35; padding:.38rem .62rem; border-radius:9999px; border:1px solid rgba(148,163,184,.48); background:#fff; color:#334155; text-align:left; }
+  .caption-focus-btn.is-active { background:#0f172a; border-color:#0f172a; color:#fff; }
+  .caption-suggestion-btn { border-style:dashed; background:#f8fafc; }
+  .caption-suggestion-btn:hover { background:#e2e8f0; }
+  .caption-empty-note { font-size:12px; color:#94a3b8; }
 
   /* Lightbox */
   .lightbox { position:fixed; inset:0; background:rgba(0,0,0,.9); display:none; align-items:center; justify-content:center; z-index:60; padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 72px); }
@@ -228,7 +235,7 @@
 
     <div class="mt-4">
       <label class="block text-sm mb-2 text-slate-600">設備/區域群組照片</label>
-      <p class="text-xs text-slate-500 mb-3">先建立一台冷氣、洗衣機或水塔群組，只要在群組填一次樓層、安裝位置、清洗類別、品牌、機型／型號與設備備註，該群組內照片會共用這些資訊；照片也可以另外補單張說明。</p>
+      <p class="text-xs text-slate-500 mb-3">先建立一台冷氣、洗衣機或水塔群組，只要在群組填一次樓層、安裝位置、清洗類別、品牌、機型／型號與設備備註，該群組內照片會共用這些資訊；每張前後拼接對比照片也可快速套用成果說明，或自行輸入。</p>
       <div id="items" class="space-y-4"></div>
       <div class="flex flex-wrap gap-2 mt-2">
         <button id="addGroup" class="btn btn-ghost tap">＋ 新增一個設備/區域</button>
@@ -237,7 +244,17 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-      <div><label class="block text-sm mb-1 text-slate-600">標籤（選填）</label><input id="tags" class="input" placeholder="以逗號分隔，例如：冷氣, 住家"/></div>
+      <div>
+        <label class="block text-sm mb-1 text-slate-600">標籤（選填）</label>
+        <div id="tag-quick-options" class="flex flex-wrap gap-2 mb-2" aria-label="常用標籤快速選擇">
+          <button type="button" class="tag-quick-btn btn btn-ghost tap px-3 py-2 text-sm" data-tag="冷氣" aria-pressed="false">冷氣</button>
+          <button type="button" class="tag-quick-btn btn btn-ghost tap px-3 py-2 text-sm" data-tag="直立式洗衣機" aria-pressed="false">直立式洗衣機</button>
+          <button type="button" class="tag-quick-btn btn btn-ghost tap px-3 py-2 text-sm" data-tag="水塔" aria-pressed="false">水塔</button>
+          <button type="button" class="tag-quick-btn btn btn-ghost tap px-3 py-2 text-sm" data-tag="自來水管線" aria-pressed="false">自來水管線</button>
+        </div>
+        <input id="tags" class="input" placeholder="點選上方常用標籤，或自行輸入；多項以「、」分隔"/>
+        <p class="text-xs text-slate-500 mt-1">可重複點選取消標籤；例如：冷氣、直立式洗衣機。</p>
+      </div>
       <div><label class="block text-sm mb-1 text-slate-600">網址代碼（選填）</label><input id="slug" class="input" placeholder="留空自動產生，例如：20260528-001"/></div>
     <div class="mt-2 flex items-center gap-2 text-xs text-slate-600">
       <input id="hidden" type="checkbox" class="w-4 h-4 border-slate-300 rounded"/>
@@ -364,6 +381,45 @@
     }
     let editingSlug = null;
     let editingRecord = null;
+    function parseTags(value){
+      const seen = new Set();
+      return String(value || '').split(/[,，、\n\s]+/).map(tag => tag.trim()).filter(tag => {
+        if (!tag || seen.has(tag)) return false;
+        seen.add(tag);
+        return true;
+      });
+    }
+    function syncQuickTagButtons(tags){
+      const normalized = Array.isArray(tags) ? tags : parseTags(tags);
+      $$('.tag-quick-btn').forEach(btn => {
+        const selected = normalized.includes(btn.dataset.tag);
+        btn.setAttribute('aria-pressed', String(selected));
+        btn.classList.toggle('btn-primary', selected);
+        btn.classList.toggle('btn-ghost', !selected);
+      });
+    }
+    function setTags(tags){
+      const input = $('#tags');
+      if (!input) return;
+      const normalized = Array.isArray(tags) ? tags : parseTags(tags);
+      input.value = normalized.join('、');
+      syncQuickTagButtons(normalized);
+    }
+    function initQuickTags(){
+      const input = $('#tags');
+      if (!input) return;
+      $$('.tag-quick-btn').forEach(btn => btn.addEventListener('click', () => {
+        const tags = parseTags(input.value);
+        const chosen = btn.dataset.tag;
+        const next = tags.includes(chosen) ? tags.filter(tag => tag !== chosen) : [...tags, chosen];
+        setTags(next);
+      }));
+      input.addEventListener('input', () => syncQuickTagButtons(parseTags(input.value)));
+      input.addEventListener('change', () => setTags(parseTags(input.value)));
+      input.addEventListener('blur', () => setTags(parseTags(input.value)));
+      setTags(input.value);
+    }
+    initQuickTags();
     function showCopyToast(msg = '已複製連結！') {
       const el = $('#copy-toast');
       if (!el) return;
@@ -777,7 +833,11 @@
       const modelCustom = group.querySelector('.model-custom');
       floorSel?.addEventListener('change', ()=>toggleCustomSelect(floorSel, floorCustom, 'custom-floor'));
       placeSel?.addEventListener('change', ()=>toggleCustomSelect(placeSel, placeCustom, 'custom-place'));
-      typeSel?.addEventListener('change', ()=>toggleCustomSelect(typeSel, typeCustom, 'custom-type'));
+      typeSel?.addEventListener('change', ()=>{
+        toggleCustomSelect(typeSel, typeCustom, 'custom-type');
+        refreshCaptionSuggestionsForGroup(group);
+      });
+      typeCustom?.addEventListener('input', ()=>refreshCaptionSuggestionsForGroup(group));
       brandSel?.addEventListener('change', ()=>toggleCustomSelect(brandSel, brandCustom, 'custom-brand'));
       modelSel?.addEventListener('change', ()=>toggleCustomSelect(modelSel, modelCustom, 'custom-model'));
     }
@@ -811,8 +871,129 @@
     }
 
     function getRowCaption(row){
-      // 單張照片說明未填寫時維持空白，不再自動套用群組文字。
+      // 對比照片說明未填寫時維持空白，不自動套用任何固定文字。
       return (row.querySelector('.caption-input')?.value || '').trim();
+    }
+
+    const CAPTION_PRESETS = {
+      aircon: {
+        label: '冷氣室內機',
+        overall: [
+          '冷氣室內機清洗前後狀況對照。',
+          '本次冷氣內部清潔成果紀錄。',
+          '室內機拆洗保養前後整潔狀況比較。',
+          '完成冷氣清潔後，內部整潔度明顯提升。'
+        ],
+        inside: [
+          '風鼓內部髒污清除前後對照。',
+          '冷氣內部重點藏污區域清潔成果紀錄。',
+          '出風區域髒污處理完成後的成果對比。',
+          '導風葉片與出風口完成清潔後的狀況紀錄。'
+        ],
+        parts: [
+          '濾網與面板清洗前後整潔狀況對照。',
+          '冷氣拆卸零件完成清潔後的成果紀錄。',
+          '濾網表面髒污清除前後比較。'
+        ],
+        dirt: [
+          '本次冷氣清洗排出的髒污紀錄。',
+          '冷氣內部累積髒污經清潔後排出。',
+          '清洗過程所排出的污水狀況紀錄。'
+        ]
+      },
+      washer: {
+        label: '直立式洗衣機',
+        overall: [
+          '直立式洗衣機拆洗前後狀況對照。',
+          '本次洗衣機拆洗保養前後差異紀錄。',
+          '洗衣機內部清洗完成後，髒污已明顯去除。',
+          '內桶與零件完成清潔後的整潔狀況對比。'
+        ],
+        inside: [
+          '洗衣槽內外桶清潔前後對照。',
+          '內外桶夾層髒污清除前後成果紀錄。',
+          '洗衣槽長期累積髒污經清潔後恢復整潔。'
+        ],
+        parts: [
+          '波輪與底盤區域清洗前後對照。',
+          '底盤藏污區域完成清潔後的成果紀錄。',
+          '洗衣機拆卸零件清洗前後狀況比較。'
+        ],
+        dirt: [
+          '本次洗衣機內部清出的髒污紀錄。',
+          '洗衣槽內部累積髒污清除成果紀錄。',
+          '拆洗過程中清出的沉積髒污狀況。'
+        ]
+      },
+      tank: {
+        label: '水塔',
+        overall: [
+          '水塔內部清洗前後狀況對照。',
+          '本次水塔清洗保養前後整潔狀況紀錄。',
+          '水塔清潔完成後的整體成果對比。',
+          '水塔內部完成清潔後，整體狀況明顯改善。'
+        ],
+        inside: [
+          '水塔底部沉積物清除前後對照。',
+          '塔底髒污與沉澱物完成清潔後的成果紀錄。',
+          '水塔內部沉積髒污清除前後差異對比。'
+        ],
+        parts: [
+          '水塔內壁清潔前後狀況對照。',
+          '內壁附著髒污清除後的整潔成果紀錄。',
+          '水塔內壁與底部完成刷洗後的狀況比較。'
+        ],
+        dirt: [
+          '水塔底部沉積物清洗前後成果紀錄。',
+          '本次水塔清出的沉積物狀況紀錄。',
+          '塔底累積髒污完成清除後的對比紀錄。'
+        ]
+      }
+    };
+    const CAPTION_FOCUS_LABELS = { overall:'整體清潔', inside:'內部重點', parts:'零件細節', dirt:'髒污紀錄' };
+
+    function getPresetKeyForGroup(group){
+      const type = getSelectOrCustom(group, '.type-select', '.type-custom', 'custom-type');
+      if (/冷氣/.test(type)) return 'aircon';
+      if (/洗衣機/.test(type)) return 'washer';
+      if (/水塔/.test(type)) return 'tank';
+      return '';
+    }
+
+    function refreshCaptionSuggestions(row){
+      const group = row.closest('.group-card');
+      const box = row.querySelector('.caption-suggestions');
+      const focusWrap = row.querySelector('.caption-focus-options');
+      if(!group || !box || !focusWrap) return;
+      const key = getPresetKeyForGroup(group);
+      const preset = CAPTION_PRESETS[key];
+      const focus = row.dataset.captionFocus || 'overall';
+      row.querySelectorAll('.caption-focus-btn').forEach(btn=>btn.classList.toggle('is-active', btn.dataset.focus === focus));
+      box.innerHTML = '';
+      if(!preset){
+        focusWrap.classList.add('hidden');
+        const empty = document.createElement('span');
+        empty.className = 'caption-empty-note';
+        empty.textContent = '選擇冷氣、直立式洗衣機或水塔後，將提供相符的快速說明。';
+        box.appendChild(empty);
+        return;
+      }
+      focusWrap.classList.remove('hidden');
+      (preset[focus] || preset.overall).forEach(text=>{
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'caption-suggestion-btn';
+        btn.textContent = text;
+        btn.addEventListener('click', ()=>{
+          const input = row.querySelector('.caption-input');
+          if(input){ input.value = text; input.focus(); }
+        });
+        box.appendChild(btn);
+      });
+    }
+
+    function refreshCaptionSuggestionsForGroup(group){
+      group?.querySelectorAll('.row').forEach(row=>refreshCaptionSuggestions(row));
     }
 
     function setGroupValues(group, meta={}){
@@ -832,6 +1013,7 @@
       setSelect('.model-select','.model-custom','custom-model', meta.model);
       const deviceNote=group.querySelector('.device-note');
       if(deviceNote) deviceNote.value=meta.deviceNote || meta.note || '';
+      refreshCaptionSuggestionsForGroup(group);
     }
 
     function refreshCoverState(){
@@ -895,7 +1077,7 @@
             <select class="input type-select">
               <option value="" disabled selected>請選擇清洗類別</option>
               <option>分離式冷氣室內機</option><option>吊隱式冷氣室內機</option>
-              <option>直立式洗衣機</option><option>水塔</option><option>自來水管</option>
+              <option>直立式洗衣機</option><option>水塔</option><option>自來水管線</option>
               <option value="custom-type">其他（手動輸入）</option>
             </select>
             <input class="input mt-1 type-custom hidden" placeholder="請輸入清洗類別"/>
@@ -907,8 +1089,8 @@
             <select class="input brand-select">
               <option value="" selected>未填寫</option>
               <option>國際牌 Panasonic</option><option>日立 HITACHI</option><option>大金 DAIKIN</option>
-              <option>三菱 Mitsubishi</option><option>東元 TECO</option><option>聲寶 SAMPO</option>
-              <option>禾聯 HERAN</option><option>LG</option><option>Samsung</option><option>Whirlpool 惠而浦</option>
+              <option>三菱 Mitsubishi</option><option>富士通 FUJITSU</option><option>萬士益（MAXE）</option><option>東元 TECO</option><option>三洋 SANLUX</option><option>聲寶 SAMPO</option>
+              <option>禾聯 HERAN</option><option>歌林 Kolin</option><option>大同 TATUNG</option><option>LG</option><option>Samsung</option><option>Whirlpool 惠而浦</option>
               <option>不清楚</option><option value="custom-brand">其他品牌（手動輸入）</option>
             </select>
             <input class="input mt-1 brand-custom hidden" placeholder="請輸入品牌" />
@@ -970,11 +1152,22 @@
               <span class="cover-hint hidden rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">目前封面</span>
             </div>
             <input type="file" accept="image/*" class="input p-2" aria-label="選擇圖片" />
-            <div class="upload-note">照片會歸類於上方設備群組；需要單張補充時再填寫下方說明。</div>
+            <div class="upload-note">照片會歸類於上方設備群組；每張圖片為清洗前後拼接對比照，可套用下方成果說明。</div>
             <div class="upload-status" aria-live="polite"></div>
             <div>
-              <label class="block text-xs mb-1 text-slate-600">單張照片說明（選填）</label>
-              <input class="input caption-input" placeholder="例：清洗前／清洗後／風鼓髒污近照；留空則不顯示文字" />
+              <label class="block text-xs mb-1 text-slate-600">對比照片說明（選填）</label>
+              <div class="caption-assist mb-2">
+                <div class="caption-assist-title">照片重點</div>
+                <div class="caption-focus-options hidden flex flex-wrap gap-2 mb-2">
+                  <button type="button" class="caption-focus-btn is-active" data-focus="overall">整體清潔</button>
+                  <button type="button" class="caption-focus-btn" data-focus="inside">內部重點</button>
+                  <button type="button" class="caption-focus-btn" data-focus="parts">零件細節</button>
+                  <button type="button" class="caption-focus-btn" data-focus="dirt">髒污紀錄</button>
+                </div>
+                <div class="caption-assist-title">快速套用說明</div>
+                <div class="caption-suggestions flex flex-wrap gap-2"></div>
+              </div>
+              <input class="input caption-input" placeholder="點選快速說明，或自行輸入；留空則不顯示文字" />
             </div>
           </div>
         </div>
@@ -985,6 +1178,12 @@
       const thumb=row.querySelector('.thumb');
       const coverRadio=row.querySelector('.cover-radio');
       const statusEl=row.querySelector('.upload-status');
+      row.dataset.captionFocus = 'overall';
+      row.querySelectorAll('.caption-focus-btn').forEach(btn=>btn.addEventListener('click', ()=>{
+        row.dataset.captionFocus = btn.dataset.focus || 'overall';
+        refreshCaptionSuggestions(row);
+      }));
+      refreshCaptionSuggestions(row);
       function setRowStatus(message, state=''){
         if(!statusEl) return;
         statusEl.textContent=message||'';
@@ -1103,7 +1302,7 @@
       const date=$('#date').value;
       const desc=$('#desc') ? $('#desc').value.trim() : '';
       const hidden=$('#hidden') ? $('#hidden').checked : false;
-      const tags=$('#tags').value.trim();
+      const tags=parseTags($('#tags').value).join('、');
       let slug=$('#slug').value.trim();
       const groupDrafts = collectGroupsFromEditor();
       const rows=$$('#items .row');
@@ -1208,7 +1407,7 @@
       $('#title').value = '';
       $('#date').value = getTodayDateValue();
       if ($('#desc')) $('#desc').value = '';
-      $('#tags').value = '';
+      setTags([]);
       $('#slug').value = '';
       if ($('#hidden')) $('#hidden').checked = false;
       $('#items').innerHTML = '';
@@ -1238,7 +1437,7 @@
         $('#title').value = d.title || '';
         $('#date').value = d.date || '';
         if ($('#desc')) $('#desc').value = d.desc || '';
-        $('#tags').value = Array.isArray(d.tags) ? d.tags.join(', ') : (d.tags || '');
+        setTags(Array.isArray(d.tags) ? d.tags : parseTags(d.tags));
         $('#slug').value = editingSlug;
         $('#slug').disabled = true;
         if ($('#hidden')) $('#hidden').checked = d.visible === false;
@@ -1303,7 +1502,7 @@
           dateText = `${yyyy}/${mm}/${dd}`;
         }
       }
-      const tagsArr = ((data && data.tags) || '').split(',').map(x=>x.trim()).filter(Boolean);
+      const tagsArr = parseTags((data && data.tags) || '');
       const introLines = [
         titleText,
         dateText ? '服務日期：' + dateText : '',
@@ -1344,7 +1543,7 @@
         document.title=pageTitle;
 
         const tagsBox=$('#v-tags'); tagsBox.innerHTML='';
-        (d.tags||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(t=>{
+        parseTags(d.tags || '').forEach(t=>{
           const s=document.createElement('span'); s.className='chip'; s.textContent='#'+t; tagsBox.appendChild(s);
         });
 

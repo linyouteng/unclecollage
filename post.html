@@ -318,7 +318,7 @@ function render(slug, data){
   // tags
   const tagsWrap = qsel('tags'); if (tagsWrap) tagsWrap.innerHTML = '';
   const tagsArr = Array.isArray(data.tags) ? data.tags
-                : (data.tags ? String(data.tags).split(/[, \s]+/).map(s=>s.trim()).filter(Boolean) : []);
+                : (data.tags ? String(data.tags).split(/[,，、\s]+/).map(s=>s.trim()).filter(Boolean) : []);
   for (const t of tagsArr){
     const el = document.createElement('span'); el.className = 'tag'; el.textContent = t;
     tagsWrap && tagsWrap.appendChild(el);
