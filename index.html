@@ -97,6 +97,43 @@
     white-space:nowrap;
   }
 
+  /* 2026-06 mobile overflow hotfix: selected service type expands caption tools.
+     Keep every intermediate grid/flex wrapper shrinkable, then make mobile caption buttons wrap inside the card instead of widening the page. */
+  #items,
+  #items .group-card,
+  #items .group-items,
+  #items .row,
+  #items .row > .flex-1,
+  #items .row .grid,
+  #items .photo-cover-line,
+  #items .file-picker-ui,
+  #items .caption-assist,
+  #items .caption-focus-options,
+  #items .caption-suggestions,
+  #items .caption-input{
+    min-width:0 !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+  }
+  #items .row{
+    width:100% !important;
+    overflow:hidden;
+  }
+  #items .row .grid,
+  #items .file-picker-ui,
+  #items .caption-assist,
+  #items .caption-input{
+    width:100% !important;
+  }
+  #items .caption-focus-btn,
+  #items .caption-suggestion-btn{
+    min-width:0 !important;
+    max-width:100% !important;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+  }
+
+
   /* Lightbox */
   .lightbox { position:fixed; inset:0; background:rgba(0,0,0,.9); display:none; align-items:center; justify-content:center; z-index:60; padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 72px); }
   .lightbox.open { display:flex; }
@@ -358,31 +395,42 @@
       padding:.7rem;
       overflow:hidden;
     }
-    .caption-focus-options,
-    .caption-suggestions{
-      display:flex !important;
-      flex-wrap:nowrap !important;
-      overflow-x:auto;
+    .caption-focus-options{
+      display:grid !important;
+      grid-template-columns:repeat(2,minmax(0,1fr));
       gap:8px !important;
-      padding-bottom:6px;
-      -webkit-overflow-scrolling:touch;
-      scrollbar-width:thin;
+      width:100% !important;
+      max-width:100% !important;
+      overflow:visible !important;
+      padding-bottom:0;
+    }
+    .caption-suggestions{
+      display:grid !important;
+      grid-template-columns:1fr;
+      gap:8px !important;
+      width:100% !important;
+      max-width:100% !important;
+      overflow:visible !important;
+      padding-bottom:0;
     }
     .caption-focus-options.hidden{
       display:none !important;
     }
     .caption-focus-btn,
     .caption-suggestion-btn{
-      flex:0 0 auto;
-      max-width:86vw;
+      width:100% !important;
+      max-width:100% !important;
+      min-width:0 !important;
       white-space:normal;
+      overflow-wrap:anywhere;
+      word-break:break-word;
       font-size:13px;
       line-height:1.45;
       padding:.55rem .75rem;
       text-align:left;
     }
     .caption-suggestion-btn{
-      min-width:132px;
+      min-width:0 !important;
     }
     .caption-input{
       width:100% !important;
