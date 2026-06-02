@@ -55,6 +55,48 @@
   .caption-suggestion-btn:hover { background:#e2e8f0; }
   .caption-empty-note { font-size:12px; color:#94a3b8; }
 
+  /* 檔案選擇器改為自訂樣式，避免手機原生 input[type=file] 撐破版面 */
+  .row, .row * { box-sizing:border-box; }
+  .row > .flex-1, .caption-assist, .caption-input { min-width:0; max-width:100%; }
+  .file-picker-ui{
+    width:100%;
+    max-width:100%;
+    display:flex;
+    align-items:center;
+    gap:.65rem;
+    padding:.58rem .7rem;
+    border-radius:.75rem;
+    border:1px solid rgba(100,116,139,.6);
+    background:rgba(255,255,255,.75);
+    cursor:pointer;
+    overflow:hidden;
+  }
+  .file-picker-ui input[type=file]{
+    position:absolute;
+    width:1px;
+    height:1px;
+    opacity:0;
+    pointer-events:none;
+  }
+  .file-picker-btn{
+    flex:0 0 auto;
+    border:1px solid rgba(100,116,139,.55);
+    border-radius:.55rem;
+    padding:.45rem .7rem;
+    background:#fff;
+    font-weight:700;
+    color:#0f172a;
+    white-space:nowrap;
+  }
+  .file-picker-name{
+    min-width:0;
+    flex:1 1 auto;
+    color:#475569;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
   /* Lightbox */
   .lightbox { position:fixed; inset:0; background:rgba(0,0,0,.9); display:none; align-items:center; justify-content:center; z-index:60; padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 72px); }
   .lightbox.open { display:flex; }
@@ -288,12 +330,31 @@
       width:100% !important;
       min-height:46px;
     }
+    .file-picker-ui{
+      min-height:46px;
+      flex-direction:column;
+      align-items:stretch;
+      gap:.5rem;
+      padding:.65rem;
+    }
+    .file-picker-btn{
+      width:fit-content;
+      max-width:100%;
+    }
+    .file-picker-name{
+      width:100%;
+      white-space:normal;
+      overflow-wrap:anywhere;
+      line-height:1.45;
+    }
     .upload-note,
     .upload-status{
       font-size:13px;
       line-height:1.55;
     }
     .caption-assist{
+      width:100%;
+      max-width:100%;
       padding:.7rem;
       overflow:hidden;
     }
@@ -1921,7 +1982,11 @@
               </label>
               <span class="cover-hint hidden rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">目前封面</span>
             </div>
-            <input type="file" accept="image/*" class="input p-2 photo-file-input" aria-label="選擇圖片" />
+            <label class="file-picker-ui" aria-label="選擇圖片">
+              <span class="file-picker-btn">選擇檔案</span>
+              <span class="file-picker-name">尚未選擇檔案</span>
+              <input type="file" accept="image/*" class="photo-file-input" aria-label="選擇圖片" />
+            </label>
             <div class="upload-note">照片會歸類於上方設備群組；每張圖片為清洗前後拼接對比照，可套用下方成果說明。</div>
             <div class="upload-status" aria-live="polite"></div>
             <div>
@@ -1945,6 +2010,7 @@
       itemsBox.appendChild(row);
 
       const fileInput=row.querySelector('input[type=file]');
+      const fileNameEl=row.querySelector('.file-picker-name');
       const thumb=row.querySelector('.thumb');
       const coverRadio=row.querySelector('.cover-radio');
       const statusEl=row.querySelector('.upload-status');
@@ -1975,6 +2041,7 @@
       row._setExistingItem = (item)=>{
         row._existingUrl = item?.url || '';
         row.querySelector('.caption-input').value = item?.caption || '';
+        if (fileNameEl) fileNameEl.textContent = row._existingUrl ? '已保留原有圖片，可重新選擇替換' : '尚未選擇檔案';
         if (row._existingUrl) setPreviewFromUrl(row._existingUrl);
       };
       row._refreshCoverState = refreshCoverState;
@@ -1984,14 +2051,21 @@
         refreshCoverState();
       });
       fileInput.addEventListener('change',()=>{
-        const f=fileInput.files[0]; if(!f) return;
-        if(f.size>SOURCE_MAX_MB*1024*1024){ showAlert('原始圖片超過 '+SOURCE_MAX_MB+'MB，請先縮小後再選取'); fileInput.value=''; return; }
+        const f=fileInput.files[0];
+        if(!f){ if(fileNameEl) fileNameEl.textContent='尚未選擇檔案'; return; }
+        if(f.size>SOURCE_MAX_MB*1024*1024){
+          showAlert('原始圖片超過 '+SOURCE_MAX_MB+'MB，請先縮小後再選取');
+          fileInput.value='';
+          if(fileNameEl) fileNameEl.textContent='尚未選擇檔案';
+          return;
+        }
+        if(fileNameEl) fileNameEl.textContent=f.name || '已選擇圖片';
         row._file = f; row._optimizedFile = null; row._existingUrl = ''; setPreviewFromFile(f);
         setRowStatus(`已選取 ${fileSizeMB(f)}MB，送出時會自動壓縮`, 'warn');
       });
       if (file) {
         try { const dt=new DataTransfer(); dt.items.add(file); fileInput.files=dt.files; fileInput.dispatchEvent(new Event('change')); }
-        catch { row._file=file; setPreviewFromFile(file); setRowStatus(`已選取 ${fileSizeMB(file)}MB，送出時會自動壓縮`, 'warn'); }
+        catch { row._file=file; if(fileNameEl) fileNameEl.textContent=file.name || '已選擇圖片'; setPreviewFromFile(file); setRowStatus(`已選取 ${fileSizeMB(file)}MB，送出時會自動壓縮`, 'warn'); }
       }
       return row;
     }
