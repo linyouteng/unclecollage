@@ -54,11 +54,6 @@
   .caption-suggestion-btn { border-style:dashed; background:#f8fafc; }
   .caption-suggestion-btn:hover { background:#e2e8f0; }
   .caption-empty-note { font-size:12px; color:#94a3b8; }
-  .case-desc-assist { border:1px solid rgba(148,163,184,.32); background:rgba(248,250,252,.85); border-radius:.9rem; padding:.75rem; }
-  .case-desc-style-btn, .case-desc-suggestion-btn { font-size:12px; line-height:1.45; padding:.4rem .65rem; border-radius:9999px; border:1px solid rgba(148,163,184,.48); background:#fff; color:#334155; text-align:left; }
-  .case-desc-style-btn.is-active { background:#0f172a; border-color:#0f172a; color:#fff; }
-  .case-desc-suggestion-btn { display:block; width:100%; border-style:dashed; border-radius:.8rem; background:#fff; text-align:left; }
-  .case-desc-suggestion-btn:hover { background:#e2e8f0; }
 
   /* Lightbox */
   .lightbox { position:fixed; inset:0; background:rgba(0,0,0,.9); display:none; align-items:center; justify-content:center; z-index:60; padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 72px); }
@@ -89,6 +84,74 @@
   }
   .desc-template-panel textarea {
     min-height:120px;
+  }
+  .desc-generator-panel {
+    border:1px solid rgba(14,165,233,.22);
+    background:linear-gradient(135deg, rgba(240,249,255,.92), rgba(248,250,252,.92));
+    border-radius:1rem;
+    padding:.85rem;
+  }
+  .desc-generator-title {
+    font-size:13px;
+    font-weight:800;
+    color:#0f172a;
+  }
+  .desc-generator-hint {
+    font-size:11px;
+    color:#64748b;
+    line-height:1.5;
+  }
+  .desc-generator-panel .mini-label {
+    display:block;
+    font-size:11px;
+    color:#475569;
+    margin-bottom:.25rem;
+    font-weight:700;
+  }
+  .btn-desc-generate {
+    font-size:12px;
+    padding:.52rem .78rem;
+    border-radius:.85rem;
+    border:1px solid rgba(148,163,184,.55);
+    background:#fff;
+    color:#334155;
+    font-weight:700;
+  }
+  .btn-desc-generate.primary {
+    background:#0f172a;
+    color:#fff;
+    border-color:#0f172a;
+  }
+  .btn-desc-generate:hover {
+    background:#e2e8f0;
+  }
+  .btn-desc-generate.primary:hover {
+    background:#1e293b;
+  }
+  .desc-preview-wrap {
+    margin-top:.75rem;
+    border:1px dashed rgba(14,165,233,.35);
+    background:rgba(255,255,255,.78);
+    border-radius:.9rem;
+    padding:.75rem;
+  }
+  .desc-preview-title {
+    font-size:12px;
+    font-weight:800;
+    color:#0f172a;
+    margin-bottom:.25rem;
+  }
+  .desc-preview-note {
+    font-size:11px;
+    color:#64748b;
+    line-height:1.45;
+    margin-bottom:.5rem;
+  }
+  .desc-preview-textarea {
+    min-height:110px;
+    font-size:13px;
+    line-height:1.6;
+    background:#fff;
   }
 
   @media (max-width: 640px){
@@ -192,28 +255,55 @@
 
     <div class="mt-4">
       <label class="block text-sm mb-1 text-slate-600">案件說明（選填）</label>
-      <textarea id="desc" class="input" rows="4" placeholder="可依下方服務項目快速套用說明，套用後仍可自行調整內容。"></textarea>
-      <div id="case-desc-assist" class="case-desc-assist mt-3">
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-          <div>
-            <div class="text-xs font-bold text-slate-700">依服務項目快速套用</div>
-            <div id="case-desc-current-services" class="text-[11px] text-slate-500">請先於下方選擇標籤。</div>
-          </div>
-        </div>
-        <div class="text-[11px] text-slate-500 mb-1">說明風格</div>
-        <div id="case-desc-styles" class="flex flex-wrap gap-2 mb-3">
-          <button type="button" class="case-desc-style-btn is-active" data-style="concise">簡潔版</button>
-          <button type="button" class="case-desc-style-btn" data-style="professional">專業版</button>
-          <button type="button" class="case-desc-style-btn" data-style="friendly">親切版</button>
-          <button type="button" class="case-desc-style-btn" data-style="maintenance">保養提醒</button>
-        </div>
-        <div class="text-[11px] text-slate-500 mb-1">快速套用說明</div>
-        <div id="case-desc-suggestions" class="grid gap-2"></div>
-      </div>
+      <textarea id="desc" class="input" rows="4" placeholder="例：頂樓水塔多年未清洗，本次重點是除泥沙與消毒…"></textarea>
       <div class="mt-2 flex flex-wrap items-center gap-1 text-[11px] text-slate-500">
-        <span class="mr-1">其他自訂常用範本：</span>
+        <span class="mr-1">固定範本快速插入：</span>
         <div id="desc-template-list" class="flex flex-wrap items-center gap-1"></div>
         <button type="button" id="manage-desc-templates" class="btn-desc-template btn-desc-template-manage">管理範本</button>
+      </div>
+      <div id="desc-generator-panel" class="desc-generator-panel mt-3">
+        <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+          <div>
+            <div class="desc-generator-title">智慧產生案件說明</div>
+            <div class="desc-generator-hint">每次會重新組合不同句型；可依下方設備/區域資料自動帶入樓層、位置、類別、品牌，讓每篇案例不要都長一樣。</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label class="mini-label" for="desc-generate-type">服務類型</label>
+            <select id="desc-generate-type" class="input py-2 text-sm">
+              <option value="auto">自動判斷下方設備</option>
+              <option value="aircon">冷氣清洗</option>
+              <option value="washer">直立式洗衣機清洗</option>
+              <option value="tank">水塔清洗</option>
+              <option value="pipe">自來水管線清洗</option>
+              <option value="mixed">多項清洗</option>
+            </select>
+          </div>
+          <div>
+            <label class="mini-label" for="desc-generate-tone">說明語氣</label>
+            <select id="desc-generate-tone" class="input py-2 text-sm">
+              <option value="natural">自然專業</option>
+              <option value="friendly">親切口語</option>
+              <option value="short">簡短版</option>
+              <option value="detailed">詳細版</option>
+            </select>
+          </div>
+        </div>
+        <label class="mt-2 inline-flex items-center gap-2 text-xs text-slate-600 select-none">
+          <input id="desc-use-groups" type="checkbox" checked class="accent-sky-600" />
+          <span>帶入下方設備/區域資料</span>
+        </label>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button type="button" id="generate-desc-replace" class="btn-desc-generate primary">產生並覆蓋說明</button>
+          <button type="button" id="generate-desc-reroll" class="btn-desc-generate">換一版預覽</button>
+          <button type="button" id="generate-desc-append" class="btn-desc-generate">加在原文後面</button>
+        </div>
+        <div id="desc-generated-preview-wrap" class="desc-preview-wrap hidden">
+          <div class="desc-preview-title">待加入的說明預覽</div>
+          <div class="desc-preview-note">按「換一版預覽」只會更新這裡，不會動到上方案件說明；確認後再按「加在原文後面」。也可以直接修改這段預覽文字再加入。</div>
+          <textarea id="desc-generated-preview" class="input desc-preview-textarea" rows="4" placeholder="這裡會顯示準備加入的說明文字"></textarea>
+        </div>
       </div>
       <div id="desc-template-panel" class="desc-template-panel hidden mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
@@ -411,110 +501,6 @@
         return true;
       });
     }
-    const CASE_DESC_SERVICE_MAP = {
-      '冷氣': '冷氣室內機',
-      '直立式洗衣機': '直立式洗衣機',
-      '水塔': '水塔',
-      '自來水管線': '自來水管線'
-    };
-    const CASE_DESC_SINGLE_PRESETS = {
-      '冷氣': {
-        concise: ['本次完成冷氣室內機清洗保養，並整理清洗前後對比照片，方便您查看本次清潔成果。', '本次冷氣室內機清潔已完成，施工前後成果照片整理如下，供您日後參考。'],
-        professional: ['本次針對冷氣室內機進行清洗保養，包含內部重點藏污區域與相關零件清潔，施工前後對比照片已整理留存。', '本次完成冷氣室內機清潔作業，重點區域處理前後狀況均以照片記錄，方便確認清潔成果。'],
-        friendly: ['冷氣清洗服務已完成，以下整理本次施工前後對比照片，讓您清楚查看設備清潔後的狀況。', '本次冷氣已清潔完成，前後成果照片為您整理留存，日後查看也更方便。'],
-        maintenance: ['本次已完成冷氣室內機清洗保養。建議後續依使用頻率與環境狀況定期清潔，以維持設備整潔與使用品質。', '冷氣室內機本次清潔已完成，日後可依使用情況安排定期保養，減少內部髒污長期累積。']
-      },
-      '直立式洗衣機': {
-        concise: ['本次完成直立式洗衣機拆洗保養，並整理內部清洗前後對比照片，方便您查看清潔成果。', '直立式洗衣機本次拆洗已完成，相關施工前後照片整理如下供您參考。'],
-        professional: ['本次針對直立式洗衣機進行拆洗清潔，包含洗衣槽、內部藏污區域與相關零件處理，施工前後對比照片已整理留存。', '本次完成直立式洗衣機內部拆洗作業，重點清潔區域處理前後狀況均已拍攝記錄。'],
-        friendly: ['洗衣機拆洗服務已完成，以下為本次清洗前後對比照片，讓您清楚了解內部清潔成果。', '本次洗衣機已完成清潔，施工成果照片為您整理留存，方便日後查看。'],
-        maintenance: ['本次已完成直立式洗衣機拆洗保養。洗衣機內部容易因長期使用累積髒污，建議依使用情況定期安排清潔。', '直立式洗衣機內部清潔已完成，日後可視使用頻率定期拆洗保養，以維持內槽整潔。']
-      },
-      '水塔': {
-        concise: ['本次完成水塔內部清洗保養，並整理清洗前後對比照片，方便您查看本次清潔成果。', '水塔內部本次清潔已完成，施工前後成果照片整理如下供您參考。'],
-        professional: ['本次針對水塔內部進行清洗作業，包含塔底沉積物與內壁髒污處理，施工前後對比照片已完整整理。', '本次完成水塔內部清潔，重點區域處理前後狀況均已拍攝留存，方便確認清洗成果。'],
-        friendly: ['水塔清洗已完成，以下整理本次施工前後照片，讓您查看內部清潔後的狀況。', '本次水塔已完成清潔，前後成果照片為您整理留存，方便日後查看。'],
-        maintenance: ['本次已完成水塔內部清洗保養。為維持日常用水設備整潔，建議依使用狀況定期進行清潔與檢查。', '水塔本次清潔已完成，後續可依用水環境與使用情況安排定期清洗保養。']
-      },
-      '自來水管線': {
-        concise: ['本次完成自來水管線清洗服務，相關施工前後紀錄已整理留存，方便您日後查看。', '自來水管線本次清洗已完成，施工成果照片整理如下供您參考。'],
-        professional: ['本次針對自來水管線進行清洗作業，相關處理過程與完成後狀況均已透過照片整理紀錄。', '本次完成自來水管線清洗服務，施工前後成果已記錄留存，供您確認本次服務內容。'],
-        friendly: ['自來水管線清洗已完成，以下整理本次服務照片，方便您查看處理後的成果。', '本次管線清洗服務已完成，相關照片為您整理留存，日後查看更方便。'],
-        maintenance: ['本次已完成自來水管線清洗服務。建議後續依用水狀況與設備情形安排檢查或保養。', '自來水管線本次處理已完成，日後可依實際用水情況留意水質與管線狀態。']
-      }
-    };
-    let activeCaseDescStyle = 'concise';
-    function getCaseDescServices(){
-      return parseTags($('#tags')?.value || '').filter(tag => Object.prototype.hasOwnProperty.call(CASE_DESC_SERVICE_MAP, tag));
-    }
-    function getCaseDescSuggestions(style, services){
-      if(!services.length) return [];
-      if(services.length === 1) return CASE_DESC_SINGLE_PRESETS[services[0]]?.[style] || [];
-      const names = services.map(service => CASE_DESC_SERVICE_MAP[service]);
-      const label = names.join('、');
-      const cleaningLabel = services.includes('直立式洗衣機') ? '清洗及拆洗保養' : '清洗保養';
-      const joinedAction = services.map(service => {
-        if(service === '冷氣') return '冷氣室內機清潔';
-        if(service === '直立式洗衣機') return '直立式洗衣機拆洗';
-        if(service === '水塔') return '水塔內部清洗';
-        return '自來水管線清洗';
-      }).join('、');
-      const options = {
-        concise: [
-          `本次完成${label}${cleaningLabel}，相關施工前後對比照片已整理留存，方便您查看各項服務的清潔成果。`,
-          `本次服務項目包含${label}，施工完成後的前後成果照片整理如下供您參考。`
-        ],
-        professional: [
-          `本次服務項目包含${joinedAction}，針對各設備重點區域進行處理，施工前後對比照片已完整整理供您參考。`,
-          `本次完成${label}相關清潔作業，重點清潔區域及完工成果均已透過照片記錄留存。`
-        ],
-        friendly: [
-          `${label}清洗服務已完成，以下整理本次施工前後對比照片，方便您查看各項清潔成果。`,
-          `本次多項清潔服務已完成，${label}的前後成果照片已為您整理留存，日後查看更方便。`
-        ],
-        maintenance: [
-          `本次已完成${label}清洗保養。建議後續依設備使用頻率與環境狀況定期安排清潔，以維持設備整潔與使用品質。`,
-          `${label}本次服務已完成，後續可依實際使用狀況定期檢查與保養，相關施工照片已整理留存。`
-        ]
-      };
-      return options[style] || options.concise;
-    }
-    function refreshCaseDescSuggestions(){
-      const list = $('#case-desc-suggestions');
-      const status = $('#case-desc-current-services');
-      if(!list || !status) return;
-      const services = getCaseDescServices();
-      $$('.case-desc-style-btn').forEach(btn => btn.classList.toggle('is-active', btn.dataset.style === activeCaseDescStyle));
-      list.innerHTML = '';
-      if(!services.length){
-        status.textContent = '請先於下方標籤點選冷氣、直立式洗衣機、水塔或自來水管線。';
-        const empty = document.createElement('div');
-        empty.className = 'caption-empty-note';
-        empty.textContent = '選擇服務項目後，這裡會提供符合本案的整體說明。';
-        list.appendChild(empty);
-        return;
-      }
-      status.textContent = '目前服務項目：' + services.map(service => CASE_DESC_SERVICE_MAP[service]).join('、');
-      getCaseDescSuggestions(activeCaseDescStyle, services).forEach(text => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'case-desc-suggestion-btn';
-        btn.textContent = text;
-        btn.addEventListener('click', () => {
-          const textarea = $('#desc');
-          if(textarea){ textarea.value = text; textarea.focus(); }
-        });
-        list.appendChild(btn);
-      });
-    }
-    function initCaseDescAssistant(){
-      $$('.case-desc-style-btn').forEach(btn => btn.addEventListener('click', () => {
-        activeCaseDescStyle = btn.dataset.style || 'concise';
-        refreshCaseDescSuggestions();
-      }));
-      refreshCaseDescSuggestions();
-    }
-
     function syncQuickTagButtons(tags){
       const normalized = Array.isArray(tags) ? tags : parseTags(tags);
       $$('.tag-quick-btn').forEach(btn => {
@@ -530,7 +516,6 @@
       const normalized = Array.isArray(tags) ? tags : parseTags(tags);
       input.value = normalized.join('、');
       syncQuickTagButtons(normalized);
-      refreshCaseDescSuggestions();
     }
     function initQuickTags(){
       const input = $('#tags');
@@ -541,13 +526,12 @@
         const next = tags.includes(chosen) ? tags.filter(tag => tag !== chosen) : [...tags, chosen];
         setTags(next);
       }));
-      input.addEventListener('input', () => { syncQuickTagButtons(parseTags(input.value)); refreshCaseDescSuggestions(); });
+      input.addEventListener('input', () => syncQuickTagButtons(parseTags(input.value)));
       input.addEventListener('change', () => setTags(parseTags(input.value)));
       input.addEventListener('blur', () => setTags(parseTags(input.value)));
       setTags(input.value);
     }
     initQuickTags();
-    initCaseDescAssistant();
     function showCopyToast(msg = '已複製連結！') {
       const el = $('#copy-toast');
       if (!el) return;
@@ -613,27 +597,82 @@
     // 案件說明常用範例快速插入：可編輯 / 可新增範本
     const DESC_TEMPLATE_STORAGE_KEY = 'uncle_desc_templates_v1';
     const DEFAULT_DESC_TEMPLATES = [
-      {
-        id: 'ac-basic',
-        name: '冷氣清洗（住家）',
-        content: '住家分離式冷氣長期使用後，濾網與風鼓累積大量灰塵與霉菌，出風口有明顯黑垢與異味。本次針對室內機做清洗保養，包含濾網、風鼓、排水盤與外殼，高壓沖洗後恢復冷房效率並減少異味。'
-      },
-      {
-        id: 'washer-basic',
-        name: '直立式洗衣機清洗（住家）',
-        content: '直立式洗衣機長期使用後，內槽與外槽間累積大量污泥、棉絮與黑色黴斑，洗完衣物容易殘留異味。本次分解內桶，徹底清洗內外槽、脫水槽與排水孔，搭配高壓沖洗處理，恢復洗衣槽乾淨。'
-      },
-      {
-        id: 'tank-basic',
-        name: '水塔清洗',
-        content: '頂樓水塔多年未清洗，底部沉積泥沙與鐵鏽，內壁附著水垢，影響用水品質。本次先將水塔內水位放水，人工刷洗內壁與底部沉積物，最後再以清水多次沖洗，最後確保出水清澈。'
-      },
-      {
-        id: 'ac-heavy',
-        name: '冷氣清洗（多年未保養）',
-        content: '客戶長期未保養冷氣，鰭片與風鼓附著厚重灰塵，冷房效果明顯變差且用電量偏高。本次室內機清洗保養，先以環保藥劑溶解油污，再搭配高壓沖洗與排水管疏通，明顯改善冷房效率與風量。'
-      }
-    ];
+  {
+    id: 'ac-normal',
+    name: '冷氣｜一般保養',
+    content: '本次清洗的冷氣為住家日常使用設備，使用一段時間後，濾網、出風口與內部風鼓已有灰塵與髒污累積。這次針對室內機進行拆洗與高壓沖洗，將內部髒污清潔乾淨，協助恢復出風順暢度，也讓日後使用時更加清爽。'
+  },
+  {
+    id: 'ac-smell',
+    name: '冷氣｜異味改善',
+    content: '客戶反映冷氣開啟時有悶味或異味，因此本次清潔重點放在出風口、風鼓、鰭片與排水區域。拆開後可見內部已有灰塵與霉斑附著，經過細部刷洗與高壓沖洗後，降低異味來源，讓吹出的風更加乾淨清爽。'
+  },
+  {
+    id: 'ac-heavy-new',
+    name: '冷氣｜多年未清',
+    content: '此台冷氣已有一段時間未進行深度保養，內部風鼓、出風口與鰭片可見明顯灰塵與黑垢堆積。本次透過分解清潔與高壓沖洗，將長期累積的髒污完整帶出，也讓冷氣外觀與內部狀態都恢復乾淨。'
+  },
+  {
+    id: 'ac-weak-wind',
+    name: '冷氣｜風量變弱',
+    content: '本次清洗的冷氣使用時有風量變弱、出風不夠順的情況。拆開後可見濾網、風鼓與出風口已有灰塵阻塞，影響空氣流通。這次針對內部結構加強清洗，將附著髒污清除，讓出風狀態更順暢。'
+  },
+  {
+    id: 'ac-rent',
+    name: '冷氣｜租屋入住前清潔',
+    content: '本次為租屋入住前的冷氣清潔，因設備已由前一位使用者使用過一段時間，內部狀況較不容易從外觀看出。透過拆洗檢查與高壓沖洗，將風鼓、出風口與濾網累積的灰塵髒污清除，讓入住後使用更加安心。'
+  },
+  {
+    id: 'washer-normal',
+    name: '洗衣機｜一般保養',
+    content: '直立式洗衣機長期使用後，內槽與外槽之間容易累積棉絮、洗劑殘留與污垢。本次將洗衣槽拆卸後進行深度清潔，針對內桶、外槽、底盤與排水區域加強沖洗，讓洗衣機內部恢復乾淨狀態。'
+  },
+  {
+    id: 'washer-black-dirt',
+    name: '洗衣機｜槽內黑垢',
+    content: '本次清洗的洗衣機內外槽之間已有明顯黑垢與污泥累積，這些髒污平時不容易直接看見，但會隨著洗衣過程殘留在槽內。經過拆卸、刷洗與高壓沖洗後，將槽壁、底盤與細縫中的髒污完整清出。'
+  },
+  {
+    id: 'washer-smell',
+    name: '洗衣機｜異味改善',
+    content: '客戶反映洗衣機使用時有悶味，清洗時發現內槽、外槽與排水區域已有棉絮、污泥與洗劑殘留堆積。本次透過拆洗方式清潔內部死角，降低異味來源，也讓日後洗衣時的使用感受更加清爽。'
+  },
+  {
+    id: 'washer-fluff',
+    name: '洗衣機｜棉絮污泥較多',
+    content: '此台洗衣機因長期清洗衣物，槽內累積了較多棉絮、污泥與洗劑殘留。這次將內桶拆出後，針對外槽、底盤、濾網與排水周邊進行細部清潔，把藏在內部的髒污完整沖洗出來。'
+  },
+  {
+    id: 'washer-moving',
+    name: '洗衣機｜搬家前後清潔',
+    content: '本次為搬家前後的洗衣機清潔，設備在移動或重新使用前，先將內部累積的棉絮、污垢與洗劑殘留清理乾淨。透過拆洗可以更清楚檢查槽內狀況，也讓之後使用時更加乾淨放心。'
+  },
+  {
+    id: 'tank-normal',
+    name: '水塔｜一般保養',
+    content: '本次進行住家水塔定期清洗，清洗前可見底部已有些微沉積物與內壁附著髒污。作業時先將水位排放，再針對水塔內壁、底部與邊角進行刷洗與沖洗，協助維持日常用水環境的乾淨。'
+  },
+  {
+    id: 'tank-heavy',
+    name: '水塔｜多年未洗',
+    content: '此水塔已有一段時間未清洗，內壁與底部可見較明顯的沉積物、水垢與髒污。本次進行內部刷洗、底部泥沙清除與多次清水沖洗，將長期累積的髒污帶出，讓水塔內部恢復較乾淨的狀態。'
+  },
+  {
+    id: 'tank-sand',
+    name: '水塔｜底部泥沙',
+    content: '本次水塔清洗可見底部有泥沙與沉積物累積，部分邊角也有髒污附著。清洗時先排放水位，再以人工刷洗搭配清水沖洗，將底部沉積物與內壁髒污清除，讓水塔內部環境更加乾淨。'
+  },
+  {
+    id: 'tank-scale',
+    name: '水塔｜內壁水垢',
+    content: '本次清洗重點在水塔內壁與底部髒污處理，清洗前可見內壁有水垢與附著物堆積。作業時針對內壁、邊角與底部進行刷洗，再以清水反覆沖洗，將附著髒污清理乾淨，方便後續定期保養。'
+  },
+  {
+    id: 'multi-service',
+    name: '綜合清潔｜多項設備',
+    content: '本次案件包含多項設備清潔，依照現場狀況逐一檢查並安排作業。每項設備在使用一段時間後，都會在不同位置累積灰塵、污垢或殘留物，因此本次針對各設備的重點區域進行拆洗、刷洗與沖洗，讓整體使用環境更加清爽乾淨。'
+  }
+];
     let descTemplates = [];
 
     function normalizeDescTemplates(list){
@@ -873,6 +912,463 @@
       nameInput?.addEventListener('keydown', e=>{ if(e.key==='Enter') e.preventDefault(); });
       contentInput?.addEventListener('keydown', e=>{ if((e.ctrlKey || e.metaKey) && e.key==='Enter') document.getElementById('save-desc-template')?.click(); });
     }
+
+    /* ====== 智慧案件說明產生器 ====== */
+    const DESC_SERVICE_LABELS = {
+      aircon: '冷氣清洗',
+      washer: '直立式洗衣機清洗',
+      tank: '水塔清洗',
+      pipe: '自來水管線清洗',
+      mixed: '多項清洗'
+    };
+
+    const DESC_GENERATOR_BANK = {
+      aircon: {
+        opening: [
+          '本次服務針對冷氣室內機進行清潔保養。',
+          '這次協助客戶處理冷氣長時間使用後的內部髒污。',
+          '本案主要針對冷氣設備進行清洗與保養紀錄。',
+          '冷氣使用一段時間後，內部容易累積灰塵與潮濕髒污，本次安排完整清潔。'
+        ],
+        before: [
+          '清洗前可見濾網、出風口與內部可視區域已有灰塵、霉斑與使用痕跡累積。',
+          '設備內部因長期運轉，風鼓、鰭片與出風區域容易藏污納垢。',
+          '清潔前內部已有不同程度的髒污附著，容易影響使用時的空氣感受。',
+          '從清洗前照片可以看出，出風口與內部細節處已有明顯髒污累積。'
+        ],
+        process: [
+          '清洗過程中針對外殼、濾網、蒸發器、風鼓與可清潔區域逐一整理。',
+          '本次依現場狀況拆卸可清潔部件，再搭配沖洗方式加強內部重點區域。',
+          '針對容易累積灰塵與霉垢的位置加強處理，讓整體清潔更完整。',
+          '服務過程以保護周邊環境為前提，逐步完成拆洗、沖洗與復原。'
+        ],
+        after: [
+          '完成後整體潔淨度明顯提升，清洗前後差異清楚可見。',
+          '清洗後內部狀態恢復較乾淨的樣貌，後續使用也更讓人安心。',
+          '整理完成後，出風區域與可視部位的髒污已大幅改善。',
+          '從前後對比照片可以看出，設備內部整潔度有明顯提升。'
+        ],
+        ending: [
+          '建議後續依使用頻率定期保養，減少髒污長期堆積。',
+          '定期清洗有助於維持較好的使用品質，也能保留完整的保養紀錄。',
+          '後續可依季節與使用量安排清潔，讓設備維持較舒適的使用狀態。',
+          '本次照片可作為日後保養前後比對參考。'
+        ],
+        friendly: {
+          opening: [
+            '冷氣用久了，裡面多少都會累積灰塵和髒污，這次幫客戶做一次完整整理。',
+            '這次主要是幫客戶把冷氣內部長期累積的髒污清一清。',
+            '本次冷氣清洗重點，是把平常看不太到、但容易藏髒污的位置整理乾淨。'
+          ],
+          before: [
+            '清洗前可以看到出風口和內部細節處已經有不少使用痕跡。',
+            '冷氣長時間使用後，內部灰塵和霉垢容易慢慢堆積。',
+            '從照片可以看出，清洗前後的差異相當明顯。'
+          ],
+          process: [
+            '服務時會依照現場狀況拆洗可清潔部件，並針對重點髒污加強處理。',
+            '這次針對濾網、出風口、內部可視區域與細節處逐步清潔。',
+            '清洗過程會盡量把容易忽略的小地方一起整理到位。'
+          ],
+          after: [
+            '清完之後整體看起來乾淨許多，吹起來也更讓人安心。',
+            '完成後前後對比很清楚，內部整潔度提升不少。',
+            '整理完成後，設備恢復比較清爽的狀態。'
+          ],
+          ending: [
+            '日後只要依使用頻率定期保養，就能減少髒污越堆越厚。',
+            '也建議可以定期留下照片紀錄，之後比較保養狀況會更清楚。',
+            '這次清洗紀錄也能提供客戶日後保養時參考。'
+          ]
+        }
+      },
+      washer: {
+        opening: [
+          '本次服務針對直立式洗衣機進行拆洗保養。',
+          '這次協助客戶處理洗衣機內槽與零件長期累積的髒污。',
+          '本案主要針對洗衣槽內外部進行清潔與保養紀錄。',
+          '洗衣機長期接觸水氣、棉絮與洗劑殘留，本次安排拆洗整理。'
+        ],
+        before: [
+          '清洗前可見內槽、外槽與底盤區域有污垢、棉絮與黑色髒污累積。',
+          '洗衣槽夾層屬於平常不容易看見的位置，長期使用後容易藏污納垢。',
+          '拆開後可以看到內部已有不同程度的沉積髒污與使用痕跡。',
+          '清潔前內外槽之間已有明顯髒污附著，適合透過拆洗方式處理。'
+        ],
+        process: [
+          '清洗過程中拆卸可清潔部件，針對內桶、外槽、波輪、底盤與排水區域逐一整理。',
+          '本次依機況進行拆洗，並搭配刷洗與沖洗方式處理夾層髒污。',
+          '針對容易堆積棉絮、污泥與洗劑殘留的位置加強清潔。',
+          '服務過程會依序拆卸、清洗、檢查與復原，保留完整前後對照。'
+        ],
+        after: [
+          '完成後內外槽與零件整潔度明顯提升，前後差異清楚可見。',
+          '清洗後洗衣槽內部恢復較乾淨的狀態，後續洗衣也更安心。',
+          '整理完成後，原本附著的髒污已大幅改善。',
+          '從對比照片能清楚看到拆洗前後的整潔差異。'
+        ],
+        ending: [
+          '建議日後依使用頻率定期拆洗，減少污垢長期累積。',
+          '定期保養能讓洗衣槽維持較乾淨的狀態，也方便觀察後續使用情況。',
+          '本次清洗照片可作為日後保養週期判斷的參考。',
+          '後續若使用量較高，可縮短保養間隔，避免髒污累積過厚。'
+        ],
+        friendly: {
+          opening: [
+            '洗衣機平常看起來正常，但內槽夾層其實很容易累積髒污，這次幫客戶拆開來整理。',
+            '這次主要是幫客戶處理直立式洗衣機裡面看不到的藏污區域。',
+            '本次洗衣機拆洗，重點放在內外槽、底盤和容易卡髒污的位置。'
+          ],
+          before: [
+            '拆開後可以看到內部有不少棉絮、污垢和長期使用痕跡。',
+            '洗衣槽夾層平常清不到，時間久了髒污就會慢慢累積。',
+            '清洗前後照片可以很清楚看出差異。'
+          ],
+          process: [
+            '服務時會拆下可清潔部件，再把內桶、底盤和夾層髒污逐一處理。',
+            '這次針對內外槽、波輪和排水附近容易藏污的位置加強清潔。',
+            '清洗過程會邊拆邊整理，完成後再復原檢查。'
+          ],
+          after: [
+            '清完之後內部乾淨很多，整體狀態也更讓人放心。',
+            '完成後從照片就能看出，原本的髒污已經明顯改善。',
+            '整理完成後，洗衣槽恢復比較清爽的狀態。'
+          ],
+          ending: [
+            '建議可以定期拆洗，避免髒污越堆越厚。',
+            '這次紀錄也能讓客戶之後判斷保養時間更有依據。',
+            '後續依使用量安排保養，就能維持比較好的清潔狀態。'
+          ]
+        }
+      },
+      tank: {
+        opening: [
+          '本次服務針對水塔內部進行清洗保養。',
+          '這次協助客戶處理水塔底部沉積物與內壁髒污。',
+          '本案主要針對水塔內部狀況進行清潔與前後紀錄。',
+          '水塔長期使用後，底部與內壁容易累積沉澱物，本次安排清洗整理。'
+        ],
+        before: [
+          '清洗前可見底部有泥沙、沉積物或水垢痕跡，內壁也有使用後的附著髒污。',
+          '水塔內部長時間蓄水後，底部容易堆積肉眼可見的沉澱物。',
+          '從清洗前照片可以看出，塔底與內壁已有不同程度的髒污累積。',
+          '清潔前內部可見沉積物與水痕，適合安排定期清洗。'
+        ],
+        process: [
+          '清洗過程先排放水位，再針對內壁、底部與邊角位置刷洗整理。',
+          '本次依水塔狀況處理底部沉積物，並以清水反覆沖洗。',
+          '針對塔底與內壁容易沉積的位置加強清潔，讓整體狀態更乾淨。',
+          '服務過程包含放水、刷洗、沖洗與復原確認。'
+        ],
+        after: [
+          '完成後塔底與內壁整潔度明顯提升，清洗前後差異清楚可見。',
+          '清洗後內部沉積物已大幅清除，整體狀態恢復較乾淨。',
+          '整理完成後，水塔內部環境明顯改善。',
+          '從前後對比照片可以看出底部髒污已明顯減少。'
+        ],
+        ending: [
+          '建議後續依使用情況定期清洗，維持水塔內部整潔。',
+          '定期清洗能減少沉積物長期累積，也方便掌握水塔狀況。',
+          '本次照片可作為日後保養與清洗週期的參考。',
+          '後續可定期檢查塔內狀態，避免沉積物累積過久。'
+        ],
+        friendly: {
+          opening: [
+            '水塔平常比較少打開看，時間久了底部很容易累積沉澱物，這次幫客戶完整清洗。',
+            '這次主要是幫客戶整理水塔內部，處理塔底和內壁的髒污。',
+            '本次水塔清洗，重點放在底部沉積物和內壁附著髒污。'
+          ],
+          before: [
+            '清洗前可以看到塔底已有沉積物，內壁也有使用後的痕跡。',
+            '水塔長時間使用後，底部多少會累積泥沙和水垢。',
+            '從照片可以清楚看到清洗前後的差異。'
+          ],
+          process: [
+            '服務時會先處理水位，再把塔底、內壁和邊角位置刷洗乾淨。',
+            '這次針對沉積物較明顯的位置加強清潔，並反覆沖洗整理。',
+            '清洗過程會逐步刷洗與沖洗，確認整體狀態後再復原。'
+          ],
+          after: [
+            '清完後塔內乾淨許多，底部狀況也明顯改善。',
+            '完成後前後對比很清楚，水塔內部看起來更乾淨。',
+            '整理完成後，整體狀態比清洗前清爽許多。'
+          ],
+          ending: [
+            '建議可以固定一段時間檢查與清洗，避免沉積物越累積越多。',
+            '這次照片也能讓客戶之後安排保養時更有依據。',
+            '後續依使用狀況定期維護，就能更清楚掌握水塔內部狀態。'
+          ]
+        }
+      },
+      pipe: {
+        opening: [
+          '本次服務針對自來水管線進行清洗保養。',
+          '這次協助客戶處理管線長期使用後的沉積物與水色狀況。',
+          '本案主要針對居家管線清潔進行整理與紀錄。',
+          '管線長期使用後容易累積沉積物，本次安排清洗檢查。'
+        ],
+        before: [
+          '清洗前管線內部可能累積沉積物、水垢或鏽色水，出水狀況可作為觀察重點。',
+          '長期使用後，管線內容易因水質與材質狀況產生沉積痕跡。',
+          '清洗前可從排水與水色變化觀察管線內部累積狀況。',
+          '本次服務前已先確認現場用水與出水狀態。'
+        ],
+        process: [
+          '清洗過程依現場管線配置逐步處理，並觀察排出水色與沉積物變化。',
+          '本次透過管線清洗流程，將內部沉積物逐步帶出。',
+          '服務過程會配合現場出水點檢查，讓清洗紀錄更完整。',
+          '針對主要用水區域依序清洗與確認，保留前後狀況紀錄。'
+        ],
+        after: [
+          '完成後出水狀況與清洗紀錄可作為日後保養參考。',
+          '清洗後管線排出狀態較清楚，也方便客戶掌握後續使用情況。',
+          '整理完成後，整體管線清洗流程已完成並留下紀錄。',
+          '從清洗過程紀錄可觀察管線內部沉積物排出狀況。'
+        ],
+        ending: [
+          '建議後續依用水狀況定期檢查，必要時再安排保養。',
+          '若居家用水量較高，可依實際狀況評估後續清洗週期。',
+          '本次紀錄可提供日後比對水色與管線狀況。',
+          '後續可持續觀察出水狀態，作為保養安排依據。'
+        ]
+      },
+      mixed: {
+        opening: [
+          '本次服務包含多個設備與區域的清洗保養。',
+          '這次協助客戶整理多項居家清潔保養項目。',
+          '本案依照現場需求，分別針對不同設備與區域進行清潔紀錄。',
+          '本次服務項目較多，依現場設備狀況逐項完成清洗。'
+        ],
+        before: [
+          '各項設備清洗前皆可見不同程度的灰塵、沉積物、使用痕跡或藏污狀況。',
+          '不同區域的髒污狀況不完全相同，因此本次依設備特性分別處理。',
+          '從清洗前照片可以看出，各設備都有需要整理與保養的位置。',
+          '清潔前先確認各區域狀況，再依項目安排清洗順序。'
+        ],
+        process: [
+          '清洗過程依不同設備特性安排拆洗、刷洗、沖洗與復原。',
+          '本次逐一處理各設備重點髒污，並保留清洗前後照片紀錄。',
+          '針對不同類型設備，分別以合適方式完成清潔與整理。',
+          '服務過程依現場狀況調整清洗順序，讓整體流程更完整。'
+        ],
+        after: [
+          '完成後各項設備與區域的整潔度皆有提升，前後差異清楚可見。',
+          '清洗後整體環境與設備狀態較清爽，也方便客戶留存紀錄。',
+          '整理完成後，各項服務成果都可從照片中清楚比對。',
+          '從前後對比照片可以看出，本次多項清洗皆已完成整理。'
+        ],
+        ending: [
+          '建議後續依不同設備的使用頻率分別安排保養週期。',
+          '本次紀錄可作為日後安排冷氣、洗衣機、水塔或其他設備清洗的參考。',
+          '定期整理不同設備，有助於降低髒污長期累積。',
+          '後續可依每項設備使用情況，彈性安排下次保養時間。'
+        ],
+        friendly: {
+          opening: [
+            '這次服務項目比較多，幫客戶把幾個需要整理的設備一起處理。',
+            '本次依照現場狀況，分別完成多個設備/區域的清洗保養。',
+            '這次把不同區域的清潔重點一起整理，方便客戶一次留下完整紀錄。'
+          ],
+          before: [
+            '每個設備的髒污狀況不太一樣，所以會依現場狀況分別處理。',
+            '清洗前可以看到各區域都有不同程度的使用痕跡。',
+            '從照片能看出，每個項目前後差異都很值得記錄。'
+          ],
+          process: [
+            '服務時會依不同設備特性逐項清潔，該拆洗的拆洗、該刷洗的刷洗。',
+            '這次把各項重點區域分別處理，並留下清洗前後照片。',
+            '整個流程依現場順序逐步完成，讓客戶可以清楚看到成果。'
+          ],
+          after: [
+            '完成後各項設備都乾淨許多，前後對比也很清楚。',
+            '清洗後整體狀態更清爽，也方便客戶之後回顧保養紀錄。',
+            '整理完成後，每個項目的差異都能從照片中看出來。'
+          ],
+          ending: [
+            '之後可以依不同設備的使用頻率，分別安排保養時間。',
+            '這次紀錄也能作為下次保養週期的參考。',
+            '定期整理可以減少髒污累積，維持比較好的使用狀態。'
+          ]
+        }
+      }
+    };
+
+    function pickDescLine(list){
+      const arr = Array.isArray(list) ? list.filter(Boolean) : [];
+      if(!arr.length) return '';
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function isMeaningfulMetaValue(value){
+      const v = String(value || '').trim();
+      return !!v && !['未填寫', '不清楚', '請選擇樓層', '請選擇安裝位置', '請選擇清洗類別'].includes(v);
+    }
+
+    function getDescGroupName(group){
+      if(!group) return '';
+      const location = [group.floor, group.place].filter(isMeaningfulMetaValue).join(' ');
+      const device = [group.brand, group.type].filter(isMeaningfulMetaValue).join(' ');
+      const model = isMeaningfulMetaValue(group.model) ? `（${group.model}）` : '';
+      const note = isMeaningfulMetaValue(group.deviceNote || group.note) ? `－${group.deviceNote || group.note}` : '';
+      const name = [location, device].filter(Boolean).join(' ');
+      return (name + model + note).trim() || group.title || '';
+    }
+
+    function collectDescGroupSnapshot(){
+      return $$('#items .group-card')
+        .map(group=>{
+          try{ return getGroupMeta(group); }
+          catch{ return null; }
+        })
+        .filter(group=>group && (group.floor || group.place || group.type || group.brand || group.model || group.deviceNote || group.note || group.title));
+    }
+
+    function detectDescTypeFromGroups(groups){
+      const tagsText = $('#tags')?.value || '';
+      const text = [tagsText, ...groups.map(g=>[g.type, g.title, g.deviceNote, g.note].filter(Boolean).join(' '))].join(' ');
+      const found = new Set();
+      if(/冷氣|室內機|吊隱|分離式/.test(text)) found.add('aircon');
+      if(/洗衣機|洗衣槽|內槽|直立式/.test(text)) found.add('washer');
+      if(/水塔|蓄水塔|塔底/.test(text)) found.add('tank');
+      if(/水管|管線|自來水/.test(text)) found.add('pipe');
+      if(found.size >= 2) return 'mixed';
+      return Array.from(found)[0] || 'mixed';
+    }
+
+    function buildDescGroupSummary(groups){
+      if(!groups.length) return '';
+      const names = groups.map(getDescGroupName).filter(Boolean);
+      if(!names.length) return '';
+      if(names.length === 1) return `本次服務項目為 ${names[0]}。`;
+      const shown = names.slice(0, 4).join('、');
+      const more = names.length > 4 ? `等 ${names.length} 個設備/區域` : `${names.length} 個設備/區域`;
+      return `本次服務共整理 ${more}，包含 ${shown}。`;
+    }
+
+    function getDescToneBank(bank, tone){
+      if(tone === 'friendly' && bank.friendly) return bank.friendly;
+      return bank;
+    }
+
+    function uniqueDescParts(parts){
+      const seen = new Set();
+      return parts.map(part=>String(part || '').trim()).filter(part=>{
+        if(!part || seen.has(part)) return false;
+        seen.add(part);
+        return true;
+      });
+    }
+
+    function buildGeneratedDesc(){
+      const typeSelect = $('#desc-generate-type');
+      const tone = $('#desc-generate-tone')?.value || 'natural';
+      const useGroups = $('#desc-use-groups')?.checked !== false;
+      const groups = useGroups ? collectDescGroupSnapshot() : [];
+      const selectedType = typeSelect?.value || 'auto';
+      const type = selectedType === 'auto' ? detectDescTypeFromGroups(groups) : selectedType;
+      const bank = DESC_GENERATOR_BANK[type] || DESC_GENERATOR_BANK.mixed;
+      const toneBank = getDescToneBank(bank, tone);
+      const groupSummary = useGroups ? buildDescGroupSummary(groups) : '';
+
+      let parts;
+      if(tone === 'short'){
+        parts = [
+          groupSummary || pickDescLine(bank.opening),
+          pickDescLine(bank.process),
+          pickDescLine(bank.after)
+        ];
+      } else if(tone === 'detailed'){
+        parts = [
+          pickDescLine(bank.opening),
+          groupSummary,
+          pickDescLine(bank.before),
+          pickDescLine(bank.process),
+          pickDescLine(bank.after),
+          pickDescLine(bank.ending)
+        ];
+      } else {
+        parts = [
+          pickDescLine(toneBank.opening),
+          groupSummary,
+          pickDescLine(toneBank.before),
+          pickDescLine(toneBank.process),
+          pickDescLine(toneBank.after),
+          pickDescLine(toneBank.ending)
+        ];
+      }
+
+      const result = uniqueDescParts(parts).join('\n');
+      return result || `${DESC_SERVICE_LABELS[type] || '本次服務'}已完成清洗保養，清洗前後差異可由照片紀錄查看。`;
+    }
+
+    let lastGeneratedDescDraft = '';
+
+    function setDescGeneratedPreview(text){
+      lastGeneratedDescDraft = String(text || '').trim();
+      const wrap = $('#desc-generated-preview-wrap');
+      const preview = $('#desc-generated-preview');
+      if(preview) preview.value = lastGeneratedDescDraft;
+      if(wrap) wrap.classList.toggle('hidden', !lastGeneratedDescDraft);
+      return lastGeneratedDescDraft;
+    }
+
+    function getDescGeneratedPreview(){
+      const preview = $('#desc-generated-preview');
+      return (preview?.value || lastGeneratedDescDraft || '').trim();
+    }
+
+    function clearDescGeneratedPreview(){
+      lastGeneratedDescDraft = '';
+      const preview = $('#desc-generated-preview');
+      const wrap = $('#desc-generated-preview-wrap');
+      if(preview) preview.value = '';
+      if(wrap) wrap.classList.add('hidden');
+    }
+
+    function appendGeneratedDescToTextarea(textarea, generated){
+      const draft = String(generated || '').trim();
+      if(!draft) return false;
+      const current = textarea.value.trim();
+      textarea.value = current ? textarea.value.replace(/\s*$/, '') + '\n\n' + draft : draft;
+      return true;
+    }
+
+    function writeGeneratedDesc(mode='replace'){
+      const textarea = $('#desc');
+      if(!textarea) return;
+
+      if(mode === 'append'){
+        let draft = getDescGeneratedPreview();
+        if(!draft) draft = setDescGeneratedPreview(buildGeneratedDesc());
+        if(appendGeneratedDescToTextarea(textarea, draft)){
+          showCopyToast('已加在原文後面');
+          clearDescGeneratedPreview();
+          textarea.focus();
+        }
+        return;
+      }
+
+      const generated = setDescGeneratedPreview(buildGeneratedDesc());
+
+      if(mode === 'reroll'){
+        showCopyToast('已換一版預覽，原文不會被覆蓋');
+        $('#desc-generated-preview')?.focus();
+        return;
+      }
+
+      textarea.value = generated;
+      showCopyToast('已產生並覆蓋案件說明');
+      textarea.focus();
+    }
+
+    function initDescGenerator(){
+      $('#generate-desc-replace')?.addEventListener('click', ()=>writeGeneratedDesc('replace'));
+      $('#generate-desc-reroll')?.addEventListener('click', ()=>writeGeneratedDesc('reroll'));
+      $('#generate-desc-append')?.addEventListener('click', ()=>writeGeneratedDesc('append'));
+      $('#desc-generated-preview')?.addEventListener('input', ()=>{
+        lastGeneratedDescDraft = getDescGeneratedPreview();
+      });
+    }
  function isLoggedIn(){ return !!getToken(); }
 
     function refreshAdminUI(){
@@ -940,6 +1436,7 @@
     $('#admin-logout-btn')?.addEventListener('click', adminLogout);
     refreshAdminUI();
     initDescTemplateManager();
+    initDescGenerator();
 
     /* ====== 設備/區域群組與照片列邏輯 ====== */
     function toggleCustomSelect(sel, custom, trigger){
