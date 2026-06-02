@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <!-- favicon -->
-  <link href="https://res.cloudinary.com/dijzndzw2/image/upload/c_scale,w_180/v1757176751/logo-3_hddq08.png" rel="apple-touch-icon" sizes="180x180"/>
-  <link href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png" rel="shortcut icon"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="https://res.cloudinary.com/dijzndzw2/image/upload/c_scale,w_180/v1757176751/logo-3_hddq08.png"/>
+<link rel="shortcut icon" href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png"/>
 
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -561,6 +561,19 @@
       }
     }
   </style>
+
+<!-- PWA：可加入主畫面 / 安裝成類 APP -->
+<link rel="manifest" href="/manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"/>
+<meta name="application-name" content="自然大叔"/>
+<meta name="apple-mobile-web-app-title" content="自然大叔"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="msapplication-TileColor" content="#0f172a"/>
+
 </head>
 <body>
 <header>
@@ -1163,5 +1176,6 @@
   }
 })();
 </script>
+<script defer src="/assets/pwa.js"></script>
 </body>
 </html>

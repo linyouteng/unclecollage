@@ -1,0 +1,76 @@
+{
+  "name": "自然大叔 清洗前後照片分享",
+  "short_name": "自然大叔",
+  "description": "建立、整理並分享清洗前後照片紀錄，方便客戶查看案例與保存清潔成果。",
+  "lang": "zh-Hant-TW",
+  "start_url": "/index.html",
+  "scope": "/",
+  "id": "/index.html",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "portrait-primary",
+  "background_color": "#f9fafb",
+  "theme_color": "#0f172a",
+  "categories": [
+    "business",
+    "productivity",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "建立分享",
+      "short_name": "建立",
+      "description": "新增清洗前後照片分享頁",
+      "url": "/index.html",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "照片清單",
+      "short_name": "清單",
+      "description": "查看已建立的清洗案例清單",
+      "url": "/gallery.html",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}
