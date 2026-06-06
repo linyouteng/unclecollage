@@ -729,20 +729,14 @@
       return /^\d{8}$/.test(compact) ? compact : String(getTodayDateValue()).replace(/-/g, '');
     }
     async function generateDateSequenceSlug(dateValue, token){
-      const prefix = dateSlugPrefix(dateValue);
-      const url = new URL('/.netlify/functions/list-posts', location.origin);
-      url.searchParams.set('showHidden', '1');
+      const url = new URL('/.netlify/functions/next-slug', location.origin);
+      url.searchParams.set('date', dateValue || getTodayDateValue());
       const resp = await fetch(url.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
-      if (!resp.ok) throw new Error('無法取得現有案件流水號，請重新登入後再試');
-      const data = await resp.json();
-      const items = Array.isArray(data.items) ? data.items : [];
-      const pattern = new RegExp('^' + prefix + '-(\\d+)$');
-      let maxSeq = 0;
-      items.forEach(item => {
-        const match = String(item.slug || '').match(pattern);
-        if (match) maxSeq = Math.max(maxSeq, Number(match[1]) || 0);
-      });
-      return prefix + '-' + String(maxSeq + 1).padStart(3, '0');
+      const data = await resp.json().catch(() => null);
+      if (!resp.ok || !data?.ok || !data?.slug) {
+        throw new Error(data?.error || '無法產生案件流水號，請重新登入後再試');
+      }
+      return data.slug;
     }
     let editingSlug = null;
     let editingRecord = null;
@@ -2204,9 +2198,13 @@
       if(editingSlug) slug = editingSlug;
 
       try{
-        if(!slug) slug = await generateDateSequenceSlug(date, token);
-
         setBar(0); setProgress(editingSlug ? '準備更新…' : '準備上傳…');
+
+        if(!slug){
+          setProgress('正在產生分享編號…');
+          slug = await generateDateSequenceSlug(date, token);
+        }
+
         const folder=`collages/${slug}`;
         const items=[]; const groups=[]; let done=0;
 
