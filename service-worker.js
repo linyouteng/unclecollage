@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'unclecollage-pwa-v1.0.1';
+const CACHE_VERSION = 'unclecollage-pwa-v1.0.2';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 
 const STATIC_ASSETS = [
