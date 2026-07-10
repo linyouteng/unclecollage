@@ -827,7 +827,7 @@
       headers['Authorization'] = 'Bearer ' + token;
     }
 
-    const resp = await fetch(url.toString(), { headers });
+    const resp = await fetch(url.toString(), { cache: 'no-store', headers });
     if(!resp.ok){
       throw new Error('載入照片清單失敗 (' + resp.status + ')');
     }
@@ -970,7 +970,7 @@
 
   async function deletePost(slug, displayName){
     const name = displayName || slug;
-    const msg = `確定要永久刪除這筆案件嗎？\n\n案件/地點：${name}\n\n此動作會刪除所有圖片與資料，且無法復原！`;
+    const msg = `確定要永久刪除這筆案件嗎？\n\n案件/地點：${name}\n\n此動作會刪除圖片並將案件標記為已刪除，分享代碼會保留以避免舊網址快取被重用，且無法復原！`;
     const ok = await showConfirm(msg);
     if(!ok) return;
     await apiDeletePost(slug);

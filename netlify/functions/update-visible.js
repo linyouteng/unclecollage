@@ -10,6 +10,7 @@ cloudinary.config({
 
 const CORS_HEADERS = {
   'content-type': 'application/json',
+  'cache-control': 'no-store',
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'POST,OPTIONS',
   'access-control-allow-headers': 'content-type,authorization',
@@ -153,6 +154,9 @@ export default async (request) => {
     if (!data) {
       return sendJSON({ error: 'bad data.json format' }, 500);
     }
+    if (data.deleted === true || data.status === 'deleted') {
+      return sendJSON({ error: 'post has been deleted' }, 404);
+    }
 
     // 3. 改 visible
     data.visible = newVisible;
@@ -171,6 +175,7 @@ export default async (request) => {
         public_id: canonicalPid, // e.g. "collages/case-927128/data"
         overwrite:true,
         format:'json',
+        invalidate:true,
       }
     );
 

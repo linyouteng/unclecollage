@@ -1,15 +1,16 @@
 // /.netlify/functions/delete-post.js
-import { v2 as cloudinary } from 'cloudinary';
 import jwt from 'jsonwebtoken';
-
-cloudinary.config({
-  cloud_name: process.env.CLD_CLOUD_NAME,
-  api_key: process.env.CLD_API_KEY,
-  api_secret: process.env.CLD_API_SECRET,
-});
+import {
+  cloudinary,
+  isDeletedRecord,
+  normalizeSlug,
+  readPostRecord,
+  uploadPostRecord,
+} from './_shared/cloudinary-data.js';
 
 const CORS_HEADERS = {
   'content-type': 'application/json',
+  'cache-control': 'no-store',
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'POST,OPTIONS',
   'access-control-allow-headers': 'content-type,authorization',
@@ -29,7 +30,6 @@ function preflight() {
   });
 }
 
-// 驗證管理員 JWT
 function requireAdmin(request) {
   const authHeader = request.headers.get('authorization') || '';
   const m = authHeader.match(/^Bearer\s+(.+)$/i);
@@ -41,20 +41,26 @@ function requireAdmin(request) {
   return null;
 }
 
+async function deleteImageResources(slug) {
+  const folderPrefix = `collages/${slug}/`;
+  await cloudinary.api.delete_resources_by_prefix(folderPrefix, {
+    resource_type: 'image',
+    type: 'upload',
+    invalidate: true,
+  });
+}
+
 export default async (request) => {
-  // CORS 預檢
   if (request.method === 'OPTIONS') return preflight();
   if (request.method !== 'POST') {
     return sendJSON({ error: 'Method not allowed' }, 405);
   }
 
-  // 檢查權限
   const admin = requireAdmin(request);
   if (!admin) {
     return sendJSON({ error: 'Unauthorized' }, 401);
   }
 
-  // parse body
   let body = null;
   try {
     body = await request.json();
@@ -62,32 +68,48 @@ export default async (request) => {
     return sendJSON({ error: 'Invalid JSON body' }, 400);
   }
 
-  const slug = body?.slug?.trim();
-  if (!slug) {
-    return sendJSON({ error: 'slug required' }, 400);
+  let slug;
+  try {
+    slug = normalizeSlug(body?.slug);
+  } catch (err) {
+    return sendJSON({ error: err.message }, 400);
   }
 
   try {
-    const folderPrefix = `collages/${slug}/`;
+    const found = await readPostRecord(slug);
+    if (!found || !found.data) {
+      return sendJSON({ error: 'not found' }, 404);
+    }
 
-    // 1. 刪掉這個 slug 底下的「圖片 (resource_type:image)」
-    // 2. 刪掉這個 slug 底下的「raw 檔案 (data.json)」
-    // 我們用 delete_resources_by_prefix 會全清該 prefix 底下所有 public_id
-    await cloudinary.api.delete_resources_by_prefix(folderPrefix, {
-      resource_type: 'image',
-      type: 'upload',
-    });
+    // 圖片可以刪除，但 raw data 不再刪除。
+    // 保留一筆 deleted tombstone，讓 next-slug 永遠不會重用同一個分享網址。
+    await deleteImageResources(slug);
 
-    await cloudinary.api.delete_resources_by_prefix(folderPrefix, {
-      resource_type: 'raw',
-      type: 'upload',
-    });
+    const now = new Date().toISOString();
+    const deletedRecord = {
+      ...found.data,
+      slug,
+      visible: false,
+      deleted: true,
+      status: 'deleted',
+      deleted_at: found.data.deleted_at || now,
+      updated_at: now,
+      // 清掉公開頁/ZIP 會用到的圖片資料，避免刪除後仍殘留舊圖資訊。
+      items: [],
+      groups: [],
+      cover: null,
+      preview: null,
+      deletion_note: 'soft-deleted tombstone; keep this raw record to prevent slug reuse and stale share-page cache collisions',
+    };
 
-    // 3. 嘗試刪掉資料夾本身
-    //   Cloudinary 的管理 API 支援 delete_folder 來清理空資料夾
-    await cloudinary.api.delete_folder(folderPrefix);
+    if (!isDeletedRecord(found.data)) {
+      await uploadPostRecord(slug, deletedRecord);
+    } else {
+      // 已刪除的舊 tombstone 也重新上傳一次，確保欄位格式是最新版。
+      await uploadPostRecord(slug, deletedRecord);
+    }
 
-    return sendJSON({ ok: true, slug });
+    return sendJSON({ ok: true, slug, deleted: true });
   } catch (err) {
     return sendJSON(
       {

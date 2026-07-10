@@ -12,6 +12,7 @@ cloudinary.config({
 // ---- CORS + 回傳工具 ----
 const CORS_HEADERS = {
   'content-type': 'application/json',
+  'cache-control': 'no-store',
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET,POST,OPTIONS',
   'access-control-allow-headers': 'content-type,authorization'
@@ -195,6 +196,7 @@ export default async (request) => {
 
           const data = await resp.json().catch(() => null);
           if (!data) return null;
+          if (data.deleted === true || data.status === 'deleted') return null;
 
           // 決定縮圖：preview -> cover -> items[0].url
           const previewUrl =
@@ -211,6 +213,7 @@ export default async (request) => {
             tags: data.tags || [],
             items: Array.isArray(data.items) ? data.items : [],
             visible: data.visible !== false, // 沒寫就當 true
+            deleted: false,
             preview: previewUrl,
           };
 

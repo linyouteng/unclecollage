@@ -476,7 +476,7 @@ function render(slug, data){
 async function load(){
   const slug = getSlug();
   try{
-    const res = await fetch(`/.netlify/functions/get-post?slug=${encodeURIComponent(slug)}`);
+    const res = await fetch(`/.netlify/functions/get-post?slug=${encodeURIComponent(slug)}`, { cache: 'no-store' });
     if (!res.ok) throw new Error('載入作品失敗');
     const data = await res.json();
     render(slug, data);

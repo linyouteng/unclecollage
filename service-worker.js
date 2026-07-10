@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'unclecollage-pwa-v1.0.2';
+const CACHE_VERSION = 'unclecollage-pwa-v1.0.3';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 
 const STATIC_ASSETS = [
@@ -39,6 +39,14 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+function isStaticNavigate(url) {
+  if (url.search) return false;
+  return url.pathname === '/' ||
+    url.pathname === '/index.html' ||
+    url.pathname === '/gallery.html' ||
+    url.pathname === '/post.html';
+}
+
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
@@ -48,8 +56,17 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/.netlify/functions/')) return;
 
   if (request.mode === 'navigate') {
+    // 短分享網址 /<slug> 與 /post.html?slug=<slug> 都是動態內容。
+    // 不可放進 PWA cache，否則刪除後重建同 slug 時會看到舊分享頁。
+    if (!isStaticNavigate(url)) {
+      event.respondWith(fetch(request, { cache: 'no-store' }).catch(async () => {
+        return (await caches.match('/post.html')) || (await caches.match('/index.html'));
+      }));
+      return;
+    }
+
     event.respondWith(
-      fetch(request).then((response) => {
+      fetch(request, { cache: 'reload' }).then((response) => {
         const copy = response.clone();
         caches.open(STATIC_CACHE).then((cache) => cache.put(request, copy)).catch(() => undefined);
         return response;

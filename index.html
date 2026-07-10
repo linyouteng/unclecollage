@@ -745,7 +745,7 @@
     async function generateDateSequenceSlug(dateValue, token){
       const url = new URL('/.netlify/functions/next-slug', location.origin);
       url.searchParams.set('date', dateValue || getTodayDateValue());
-      const resp = await fetch(url.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
+      const resp = await fetch(url.toString(), { cache: 'no-store', headers: { 'Authorization': 'Bearer ' + token } });
       const data = await resp.json().catch(() => null);
       if (!resp.ok || !data?.ok || !data?.slug) {
         throw new Error(data?.error || '無法產生案件流水號，請重新登入後再試');
@@ -2331,7 +2331,7 @@
       }
       try{
         setProgress('讀取案件資料…');
-        const r=await fetch('/.netlify/functions/get-post?slug='+encodeURIComponent(slug));
+        const r=await fetch('/.netlify/functions/get-post?slug='+encodeURIComponent(slug), { cache: 'no-store' });
         const t=await r.text(); let d; try{ d=JSON.parse(t); }catch{ throw new Error(t); }
         if(d.error) throw new Error(d.error);
 
@@ -2439,7 +2439,7 @@
 
     async function loadPost(slug){
       try{
-        const r=await fetch('/.netlify/functions/get-post?slug='+encodeURIComponent(slug));
+        const r=await fetch('/.netlify/functions/get-post?slug='+encodeURIComponent(slug), { cache: 'no-store' });
         const t=await r.text(); let d; try{ d=JSON.parse(t); }catch{ throw new Error(t); }
         if(d.error) throw new Error(d.error);
 

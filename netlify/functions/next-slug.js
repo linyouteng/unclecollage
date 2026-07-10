@@ -1,6 +1,7 @@
 // /.netlify/functions/next-slug.js
 import { v2 as cloudinary } from 'cloudinary';
 import crypto from 'crypto';
+import { unversionedPostExists } from './_shared/cloudinary-data.js';
 
 // ---- Cloudinary 設定 ----
 cloudinary.config({
@@ -12,6 +13,7 @@ cloudinary.config({
 // ---- CORS + 回傳工具 ----
 const CORS_HEADERS = {
   'content-type': 'application/json',
+  'cache-control': 'no-store',
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET,OPTIONS',
   'access-control-allow-headers': 'content-type,authorization',
@@ -147,8 +149,18 @@ export default async (request) => {
       nextCursor = res.next_cursor || undefined;
     } while (nextCursor);
 
-    const nextSeq = maxSeq + 1;
-    const slug = `${prefix}-${String(nextSeq).padStart(3, '0')}`;
+    // 不能只用 Cloudinary Admin API 的現有資源判斷。
+    // 舊版本刪除會把 raw data 移除，導致序號被重用；但 unversioned delivery URL、
+    // PWA 或社群預覽可能仍有舊快取。這裡額外檢查 public delivery URL，
+    // 只要該 slug 的舊網址還能讀到，就跳過不重用。
+    let nextSeq = maxSeq + 1;
+    let slug = `${prefix}-${String(nextSeq).padStart(3, '0')}`;
+    let guard = 0;
+    while (guard < 200 && await unversionedPostExists(slug)) {
+      nextSeq += 1;
+      slug = `${prefix}-${String(nextSeq).padStart(3, '0')}`;
+      guard += 1;
+    }
 
     return sendJSON({ ok: true, slug, prefix, nextSeq }, 200);
   } catch (err) {

@@ -1,16 +1,9 @@
 // /.netlify/functions/get-post.js
-import { v2 as cloudinary } from 'cloudinary';
+import { isDeletedRecord, normalizeSlug, readPostRecord } from './_shared/cloudinary-data.js';
 
-// Cloudinary 後端認證
-cloudinary.config({
-  cloud_name: process.env.CLD_CLOUD_NAME,
-  api_key: process.env.CLD_API_KEY,
-  api_secret: process.env.CLD_API_SECRET,
-});
-
-// CORS header
 const CORS_HEADERS = {
   'content-type': 'application/json',
+  'cache-control': 'no-store',
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET,OPTIONS',
   'access-control-allow-headers': 'content-type,authorization',
@@ -31,7 +24,6 @@ function preflight() {
 }
 
 export default async (request) => {
-  // CORS 預檢
   if (request.method === 'OPTIONS') return preflight();
 
   if (request.method !== 'GET') {
@@ -40,38 +32,20 @@ export default async (request) => {
 
   try {
     const url = new URL(request.url);
-    const slug = url.searchParams.get('slug');
+    const slug = normalizeSlug(url.searchParams.get('slug'));
 
-    if (!slug) {
-      return sendJSON({ error: 'slug required' }, 400);
-    }
-
-    const cloud = process.env.CLD_CLOUD_NAME;
-    const dataUrl = `https://res.cloudinary.com/${cloud}/raw/upload/collages/${encodeURIComponent(
-      slug
-    )}/data.json`;
-
-    const resp = await fetch(dataUrl);
-    if (!resp.ok) {
+    const found = await readPostRecord(slug);
+    if (!found || !found.data || isDeletedRecord(found.data)) {
       return sendJSON({ error: 'not found' }, 404);
     }
 
-    const data = await resp.json().catch(() => null);
-    if (!data) {
-      return sendJSON({ error: 'bad data.json' }, 500);
-    }
-
-    // 直接把 data.json 裡的內容回傳
-    return sendJSON(data, 200);
+    return sendJSON(found.data, 200);
   } catch (err) {
-    return sendJSON(
-      {
-        error:
-          (err && (err.message || err.error?.message)) ||
-          String(err) ||
-          'Unknown error',
-      },
-      500
-    );
+    const message =
+      (err && (err.message || err.error?.message)) ||
+      String(err) ||
+      'Unknown error';
+    const status = /slug required|slug only allows/i.test(message) ? 400 : 500;
+    return sendJSON({ error: message }, status);
   }
 };

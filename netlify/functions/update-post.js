@@ -1,15 +1,10 @@
 // /.netlify/functions/update-post.js
-import { v2 as cloudinary } from 'cloudinary';
 import crypto from 'crypto';
-
-cloudinary.config({
-  cloud_name: process.env.CLD_CLOUD_NAME,
-  api_key: process.env.CLD_API_KEY,
-  api_secret: process.env.CLD_API_SECRET,
-});
+import { isDeletedRecord, readPostRecord, uploadPostRecord } from './_shared/cloudinary-data.js';
 
 const CORS_HEADERS = {
   'content-type': 'application/json',
+  'cache-control': 'no-store',
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'POST,OPTIONS',
   'access-control-allow-headers': 'content-type,authorization',
@@ -74,12 +69,9 @@ function requireAdmin(request) {
 
 async function readExisting(slug) {
   try {
-    const cloud = process.env.CLD_CLOUD_NAME;
-    if (!cloud) return null;
-    const dataUrl = `https://res.cloudinary.com/${cloud}/raw/upload/collages/${encodeURIComponent(slug)}/data.json`;
-    const resp = await fetch(dataUrl);
-    if (!resp.ok) return null;
-    return await resp.json().catch(() => null);
+    const found = await readPostRecord(slug);
+    if (!found || !found.data || isDeletedRecord(found.data)) return null;
+    return found.data;
   } catch {
     return null;
   }
@@ -172,16 +164,11 @@ export default async (request) => {
     created_at: existing?.created_at || created_at || new Date().toISOString(),
     updated_at: new Date().toISOString(),
     visible: typeof visible === 'boolean' ? visible : existing?.visible !== false,
+    deleted: false,
   };
 
   try {
-    const jsonBase64 = Buffer.from(JSON.stringify(record)).toString('base64');
-    await cloudinary.uploader.upload(`data:application/json;base64,${jsonBase64}`, {
-      resource_type: 'raw',
-      public_id: `collages/${slug}/data`,
-      overwrite: true,
-      format: 'json',
-    });
+    await uploadPostRecord(slug, record);
 
     return sendJSON({ ok: true, slug }, 200);
   } catch (err) {

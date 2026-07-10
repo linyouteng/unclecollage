@@ -1,4 +1,6 @@
 // /.netlify/functions/share.js
+import { isDeletedRecord, normalizeSlug, readPostRecord } from './_shared/cloudinary-data.js';
+
 // Dynamic Open Graph preview page for sharing /<slug> (legacy /p/<slug> remains supported)
 // - Works for link preview crawlers (LINE/iMessage) because OG tags exist in raw HTML
 // - Redirects human visitors to post.html?slug=...
@@ -79,11 +81,13 @@ function escapeHtml(s) {
 }
 
 export const handler = async (event) => {
-  const slug = getSlug(event);
-  if (!slug) {
+  let slug = '';
+  try {
+    slug = normalizeSlug(getSlug(event));
+  } catch {
     return {
       statusCode: 400,
-      headers: { 'content-type': 'text/plain; charset=utf-8' },
+      headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
       body: 'slug required',
     };
   }
@@ -100,17 +104,43 @@ export const handler = async (event) => {
     ? `${origin}/post.html?slug=${encodeURIComponent(slug)}${showDates ? `&showDates=${encodeURIComponent(showDates)}` : ''}`
     : `/post.html?slug=${encodeURIComponent(slug)}${showDates ? `&showDates=${encodeURIComponent(showDates)}` : ''}`;
 
-  // Fetch record JSON (public raw file on Cloudinary)
+  // Fetch record JSON through Cloudinary Admin API + versioned delivery URL.
+  // This avoids stale unversioned Cloudinary cache after delete/re-create.
   let record = null;
-  const cloud = process.env.CLD_CLOUD_NAME || '';
-  if (cloud) {
-    try {
-      const dataUrl = `https://res.cloudinary.com/${cloud}/raw/upload/collages/${encodeURIComponent(slug)}/data.json`;
-      const resp = await fetch(dataUrl);
-      if (resp.ok) record = await resp.json().catch(() => null);
-    } catch {
-      record = null;
-    }
+  try {
+    const found = await readPostRecord(slug);
+    if (found && found.data && !isDeletedRecord(found.data)) record = found.data;
+  } catch {
+    record = null;
+  }
+
+  if (!record) {
+    const notFoundTitle = '相簿不存在或已刪除';
+    const html = `<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(notFoundTitle)}</title>
+  <meta name="robots" content="noindex">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="${escapeHtml(notFoundTitle)}">
+  <meta property="og:description" content="這個分享連結已不存在，或已被管理員刪除。">
+</head>
+<body style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; padding:24px; line-height:1.5;">
+  <h1>${escapeHtml(notFoundTitle)}</h1>
+  <p>這個分享連結已不存在，或已被管理員刪除。</p>
+  <p><a href="${escapeHtml(origin ? origin + '/gallery.html' : '/gallery.html')}">回案例清單</a></p>
+</body>
+</html>`;
+    return {
+      statusCode: 404,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+      },
+      body: html,
+    };
   }
 
   const title = (record && record.title) ? String(record.title) : '施工成果相簿';

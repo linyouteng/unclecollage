@@ -1,17 +1,18 @@
 // /.netlify/functions/create-post.js
-import { v2 as cloudinary } from 'cloudinary';
 import crypto from 'crypto';
-
-// Cloudinary 後端認證
-cloudinary.config({
-  cloud_name: process.env.CLD_CLOUD_NAME,
-  api_key: process.env.CLD_API_KEY,
-  api_secret: process.env.CLD_API_SECRET,
-});
+import {
+  findDataResource,
+  isDeletedRecord,
+  normalizeSlug,
+  readPostRecord,
+  unversionedPostExists,
+  uploadPostRecord,
+} from './_shared/cloudinary-data.js';
 
 // ---- CORS ----
 const CORS_HEADERS = {
   'content-type': 'application/json',
+  'cache-control': 'no-store',
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'POST,OPTIONS',
   'access-control-allow-headers': 'content-type,authorization',
@@ -39,24 +40,12 @@ function errorJSON(err, status = 500) {
   try {
     console.error('[create-post] error:', err);
   } catch {}
-  return new Response(JSON.stringify({ error: msg }), {
-    status,
-    headers: CORS_HEADERS,
-  });
+  return sendJSON({ error: msg }, status);
 }
 
-// ---- JWT 驗證 (HS256) - 和 list-posts.js 同一套 ----
-function base64url(input) {
-  return Buffer.from(input)
-    .toString('base64')
-    .replace(/=/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
-}
-
+// ---- JWT 驗證 (HS256) ----
 function b64urlJson(str) {
-  const pad =
-    str.length % 4 === 2 ? '==' : str.length % 4 === 3 ? '=' : '';
+  const pad = str.length % 4 === 2 ? '==' : str.length % 4 === 3 ? '=' : '';
   const s = str.replace(/-/g, '+').replace(/_/g, '/') + pad;
   return JSON.parse(Buffer.from(s, 'base64').toString('utf8'));
 }
@@ -79,7 +68,6 @@ function verifyJWT(token, secret) {
     if (expected !== s) return null;
 
     const payload = b64urlJson(p);
-    // 過期檢查 (exp 是秒)
     if (payload.exp && Date.now() >= payload.exp * 1000) return null;
 
     return payload;
@@ -103,22 +91,53 @@ function requireAdmin(request) {
   return payload;
 }
 
+function normalizeItems(items) {
+  return items
+    .filter((item) => item && item.url)
+    .map((item) => ({
+      url: String(item.url),
+      caption: item.caption ? String(item.caption) : '',
+      groupId: item.groupId ? String(item.groupId) : '',
+      groupTitle: item.groupTitle ? String(item.groupTitle) : '',
+      floor: item.floor ? String(item.floor) : '',
+      place: item.place ? String(item.place) : '',
+      type: item.type ? String(item.type) : '',
+      brand: item.brand ? String(item.brand) : '',
+      model: item.model ? String(item.model) : '',
+      deviceNote: item.deviceNote ? String(item.deviceNote) : '',
+    }));
+}
+
+function normalizeGroups(groups) {
+  return Array.isArray(groups)
+    ? groups.map((group) => ({
+        id: group?.id ? String(group.id) : '',
+        title: group?.title ? String(group.title) : '',
+        floor: group?.floor ? String(group.floor) : '',
+        place: group?.place ? String(group.place) : '',
+        type: group?.type ? String(group.type) : '',
+        brand: group?.brand ? String(group.brand) : '',
+        model: group?.model ? String(group.model) : '',
+        deviceNote: group?.deviceNote ? String(group.deviceNote) : (group?.note ? String(group.note) : ''),
+        note: group?.deviceNote ? String(group.deviceNote) : (group?.note ? String(group.note) : ''),
+        items: Array.isArray(group?.items) ? normalizeItems(group.items) : [],
+      }))
+    : [];
+}
+
 // ---- Handler ----
 export default async (request) => {
-  // CORS 預檢
   if (request.method === 'OPTIONS') return preflight();
 
   if (request.method !== 'POST') {
     return sendJSON({ error: 'Method not allowed' }, 405);
   }
 
-  // 確認你是管理員
   const admin = requireAdmin(request);
   if (!admin) {
     return sendJSON({ error: 'Unauthorized' }, 401);
   }
 
-  // 解析 body
   let body = null;
   try {
     body = await request.json();
@@ -126,53 +145,61 @@ export default async (request) => {
     return sendJSON({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { title, date, desc, tags, slug, items, groups, coverIndex, visible } = body || {};
+  const { title, date, desc, tags, items, groups, coverIndex, visible } = body || {};
 
-  // 基本驗證
-  if (!slug || !String(slug).trim()) {
-    return sendJSON({ error: 'slug required' }, 400);
+  let slug;
+  try {
+    slug = normalizeSlug(body?.slug);
+  } catch (err) {
+    return sendJSON({ error: err.message }, err.message === 'slug required' ? 400 : 400);
   }
+
   if (!Array.isArray(items) || items.length === 0) {
     return sendJSON({ error: 'items required' }, 400);
   }
 
-  // 使用前端指定的封面圖當預覽縮圖；未指定或超出範圍時退回第一張圖
-  const normalizedCoverIndex = Number.isInteger(Number(coverIndex))
-    ? Math.min(Math.max(Number(coverIndex), 0), items.length - 1)
-    : 0;
-  const previewUrl = items[normalizedCoverIndex]?.url || items[0]?.url || null;
+  const normalizedItems = normalizeItems(items);
+  if (!normalizedItems.length) {
+    return sendJSON({ error: 'items required' }, 400);
+  }
 
-  // 我們要儲存的資料格式
-  const record = {
-    slug,
-    title,
-    date,
-    desc: desc || '',
-    tags,
-    items, // flat list for gallery/zip compatibility
-    groups: Array.isArray(groups) ? groups : [],
-    coverIndex: normalizedCoverIndex,
-    cover: previewUrl,
-    created_at: new Date().toISOString(),
-    preview: previewUrl,
-    visible: typeof visible === 'boolean' ? visible : true, // 預設上架，除非前端指定隱藏
-  };
+  const normalizedGroups = normalizeGroups(groups);
 
   try {
-    // 上傳成 raw JSON 到 Cloudinary
-    const jsonBase64 = Buffer.from(JSON.stringify(record)).toString(
-      'base64'
-    );
+    // 新增時不允許覆蓋既有 slug，包含已刪除 tombstone。
+    // 這可避免刪除後重用同一個分享網址時，撞到 Cloudinary / PWA / 社群預覽快取。
+    const existingResource = await findDataResource(slug);
+    const stalePublicUrlExists = !existingResource && await unversionedPostExists(slug);
+    if (existingResource || stalePublicUrlExists) {
+      const existing = existingResource ? await readPostRecord(slug) : null;
+      const deletedText = stalePublicUrlExists || (existing && isDeletedRecord(existing.data)) ? '（此代碼曾經被刪除或仍有舊快取，為避免舊頁面混淆不再重用）' : '';
+      return sendJSON({ error: `slug already exists ${deletedText}`.trim() }, 409);
+    }
 
-    await cloudinary.uploader.upload(
-      `data:application/json;base64,${jsonBase64}`,
-      {
-        resource_type: 'raw',
-        public_id: `collages/${slug}/data`,
-        overwrite: true,
-        format: 'json',
-      }
-    );
+    const normalizedCoverIndex = Number.isInteger(Number(coverIndex))
+      ? Math.min(Math.max(Number(coverIndex), 0), normalizedItems.length - 1)
+      : 0;
+    const previewUrl = normalizedItems[normalizedCoverIndex]?.url || normalizedItems[0]?.url || null;
+
+    const now = new Date().toISOString();
+    const record = {
+      slug,
+      title,
+      date,
+      desc: desc || '',
+      tags,
+      items: normalizedItems,
+      groups: normalizedGroups,
+      coverIndex: normalizedCoverIndex,
+      cover: previewUrl,
+      created_at: now,
+      updated_at: now,
+      preview: previewUrl,
+      visible: typeof visible === 'boolean' ? visible : true,
+      deleted: false,
+    };
+
+    await uploadPostRecord(slug, record);
 
     return sendJSON({ ok: true, slug }, 200);
   } catch (err) {
