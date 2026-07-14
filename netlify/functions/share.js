@@ -149,8 +149,8 @@ export const handler = async (event) => {
 
   // Prefer record.preview (cover), fallback to site logo
   let image = (record && record.preview) ? String(record.preview) : '';
-  if (!image && origin) image = `${origin}/logo.png`;
-  if (!image) image = '/logo.png';
+  if (!image && origin) image = `${origin}/assets/brand/logo-social-1200x630.jpg`;
+  if (!image) image = '/assets/brand/logo-social-1200x630.jpg';
 
   const html = `<!doctype html>
 <html lang="zh-Hant">

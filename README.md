@@ -11,3 +11,15 @@
 
 - iPhone / iPad：建議使用 Safari，點分享按鈕，再選「加入主畫面」。
 - Android / 桌機 Chrome、Edge：可點瀏覽器的「安裝」提示，或右上角選單中的「安裝應用程式 / 加入主畫面」。
+
+
+## Logo assets
+
+頁面已改用依顯示尺寸輸出的品牌圖檔：
+
+- `assets/brand/logo-mark-32.webp`：案例清單導覽列
+- `assets/brand/logo-mark-64.webp`、`logo-mark-128.webp`：管理頁與高解析螢幕
+- `assets/brand/logo-wordmark-h64.webp`、`logo-wordmark-h128.webp`：橫式品牌 Logo
+- `assets/brand/logo-social-1200x630.jpg`：社群分享預設圖片
+
+`logo.png` 與 `logo2.png` 僅保留縮小後的相容版本，避免舊連結直接引用時失效。PWA 圖示維持既有尺寸並重新進行無損 PNG 壓縮。

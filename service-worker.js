@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'unclecollage-pwa-v1.0.3';
+const CACHE_VERSION = 'unclecollage-pwa-v1.0.4';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 
 const STATIC_ASSETS = [
@@ -9,9 +9,12 @@ const STATIC_ASSETS = [
   '/assets/styles.css',
   '/assets/pwa.js',
   '/manifest.webmanifest',
-  '/logo.png',
-  '/logo1.png',
-  '/logo2.png',
+  '/assets/brand/logo-mark-32.webp',
+  '/assets/brand/logo-mark-64.webp',
+  '/assets/brand/logo-mark-128.webp',
+  '/assets/brand/logo-wordmark-h64.webp',
+  '/assets/brand/logo-wordmark-h128.webp',
+  '/assets/brand/logo-social-1200x630.jpg',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/maskable-192.png',
