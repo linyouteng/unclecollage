@@ -122,7 +122,7 @@ export const handler = async (event) => {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(notFoundTitle)}</title>
-  <meta name="robots" content="noindex">
+  <meta name="robots" content="noindex,nofollow,noarchive">
   <meta property="og:type" content="website">
   <meta property="og:title" content="${escapeHtml(notFoundTitle)}">
   <meta property="og:description" content="這個分享連結已不存在，或已被管理員刪除。">
@@ -138,6 +138,7 @@ export const handler = async (event) => {
       headers: {
         'content-type': 'text/html; charset=utf-8',
         'cache-control': 'no-store',
+        'x-robots-tag': 'noindex, nofollow, noarchive',
       },
       body: html,
     };
@@ -160,6 +161,7 @@ export const handler = async (event) => {
   <title>${escapeHtml(title)}</title>
 
   <meta name="description" content="${escapeHtml(desc)}">
+  <meta name="robots" content="noindex,nofollow,noarchive">
 
   <meta property="og:type" content="website">
   <meta property="og:title" content="${escapeHtml(title)}">
@@ -186,6 +188,7 @@ export const handler = async (event) => {
     headers: {
       'content-type': 'text/html; charset=utf-8',
       'cache-control': 'no-store',
+      'x-robots-tag': 'noindex, nofollow, noarchive',
     },
     body: html,
   };

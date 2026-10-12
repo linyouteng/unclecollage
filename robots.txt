@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /gallery.html
+Disallow: /index.html
+Disallow: /post.html
+Disallow: /.netlify/functions/
+
+Sitemap: https://photos.naturaluncle.com/sitemap.xml
