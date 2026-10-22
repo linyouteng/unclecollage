@@ -9,6 +9,14 @@
   NODE_VERSION = "18"
 
 
+# Permanently redirect the legacy Netlify hostname to the official custom domain.
+# Keep the original path (for example /gallery.html, /p/abc, or /20260528-001).
+[[redirects]]
+  from = "https://unclecollage.netlify.app/*"
+  to = "https://photos.naturaluncle.com/:splat"
+  status = 301
+  force = true
+
 [[redirects]]
   from = "/p/*"
   to = "/.netlify/functions/share/:splat"

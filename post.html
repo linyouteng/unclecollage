@@ -143,7 +143,7 @@
     .photo-group-head{ margin:0 0 12px; padding:14px 16px; border-radius:16px; background:#fff; border:1px solid rgba(148,163,184,.35); box-shadow:0 10px 28px rgba(15,23,42,.06); }
     .photo-group-head h2{ margin:0; font-size:18px; }
     .photo-group-head p{ margin:6px 0 0; color:#666; line-height:1.6; font-size:14px; }
-    .meta { display:flex; align-
+    .meta { display:flex; align-items:center; gap:8px; color:#777; font-size:14px }
     @media (max-width: 640px){
       header{
         padding:6px 0;
@@ -186,7 +186,6 @@
         font-size:13px;
       }
     }
-items:center; gap:8px; color:#777; font-size:14px }
     @media (min-width: 900px){ .card{ grid-column: span 6 } }
   </style>
 <link href="assets/styles.css" rel="stylesheet"/>
@@ -215,6 +214,35 @@ time[datetime].work-date{display:none !important;}
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="msapplication-TileColor" content="#0f172a"/>
 
+
+<style id="customer-share-styles">
+  .customer-share{margin:32px 0 0;padding:24px;border:1px solid #d1fae5;border-radius:20px;background:linear-gradient(135deg,#f0fdf4 0%,#ffffff 72%);box-shadow:0 14px 34px rgba(15,23,42,.07)}
+  #customer-share[hidden],#instagram-help[hidden]{display:none!important}
+  .customer-share h2{margin:0 0 8px;font-size:clamp(20px,3vw,25px);font-weight:800;color:#14532d}
+  .customer-share-intro{margin:0 0 18px;line-height:1.75;color:#4b5563}
+  .share-message-label{display:block;margin:0 0 8px;font-size:14px;font-weight:800;color:#374151}
+  #share-message{display:block;width:100%;min-height:126px;padding:13px 14px;border:1px solid #d1d5db;border-radius:12px;background:#fff;color:#111827;font:inherit;line-height:1.7;resize:vertical}
+  .share-url-row{display:flex;gap:8px;align-items:center;margin-top:10px}
+  #share-url{min-width:0;flex:1;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;color:#4b5563;font:inherit;font-size:13px}
+  .share-platforms{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}
+  .share-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:46px;padding:11px 13px;border:1px solid transparent;border-radius:12px;font:inherit;font-size:14px;font-weight:800;line-height:1.35;text-align:center;text-decoration:none;cursor:pointer;transition:filter .15s ease,transform .15s ease}
+  .share-btn:hover{filter:brightness(.96);transform:translateY(-1px)}
+  .share-btn:focus-visible,#share-message:focus-visible,#share-url:focus-visible{outline:3px solid #86efac;outline-offset:2px}
+  .share-btn-line{background:#06c755;color:#fff}
+  .share-btn-facebook{background:#1877f2;color:#fff}
+  .share-btn-threads{background:#111827;color:#fff}
+  .share-btn-instagram{background:#fff;color:#9d174d;border-color:#f3b4d5}
+  .share-btn-secondary{background:#fff;color:#1f2937;border-color:#d1d5db}
+  .share-note{margin:13px 0 0;color:#6b7280;font-size:12px;line-height:1.65}
+  .share-status{min-height:22px;margin:10px 0 0;color:#166534;font-size:13px;font-weight:700;line-height:1.6}
+  .instagram-help{margin-top:14px;padding:16px;border:1px solid #fbcfe8;border-radius:14px;background:#fff7fb}
+  .instagram-help h3{margin:0 0 6px;font-size:16px;font-weight:800;color:#831843}
+  .instagram-help p{margin:0;color:#4b5563;font-size:14px;line-height:1.7}
+  .instagram-help-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  @media(max-width:760px){.share-platforms{grid-template-columns:repeat(2,minmax(0,1fr))}.customer-share{padding:18px;border-radius:16px}}
+  @media(max-width:420px){.share-url-row{align-items:stretch;flex-direction:column}.share-url-row .share-btn{width:100%}.share-platforms{gap:8px}.share-btn{padding:10px 8px;font-size:13px}}
+</style>
+
 </head>
 <body>
 <header>
@@ -242,9 +270,36 @@ time[datetime].work-date{display:none !important;}
 </div>
 <div class="actions">
 <a class="ghost" href="#" id="zip">下載 ZIP</a>
-<a class="ghost" href="#" id="share" rel="noopener" target="_blank">連結分享</a>
 </div>
 <section class="grid" id="images"></section>
+<section class="customer-share" id="customer-share" aria-labelledby="customer-share-title" hidden>
+  <h2 id="customer-share-title">🌿 分享這次的清洗紀錄</h2>
+  <p class="customer-share-intro">如果你願意，也歡迎把這次的清洗成果分享給親朋好友，讓大家看看實際的清洗照片與紀錄。😊</p>
+  <label class="share-message-label" for="share-message">分享文字（可以自行修改）</label>
+  <textarea id="share-message" spellcheck="true">分享一下這次家裡的清洗紀錄！😊
+裡面有清洗的照片和相關說明，有興趣的朋友可以看看喔！</textarea>
+  <div class="share-url-row">
+    <input id="share-url" type="text" readonly aria-label="本次清洗紀錄分享網址" value="" />
+    <button class="share-btn share-btn-secondary" id="copy-share-url" type="button">複製案件連結</button>
+  </div>
+  <div class="share-platforms" aria-label="選擇分享平台">
+    <button class="share-btn share-btn-line" id="share-line" type="button">LINE 分享</button>
+    <button class="share-btn share-btn-facebook" id="share-facebook" type="button">Facebook 分享</button>
+    <button class="share-btn share-btn-threads" id="share-threads" type="button">Threads 發文</button>
+    <button class="share-btn share-btn-instagram" id="share-instagram" type="button" aria-expanded="false" aria-controls="instagram-help">Instagram 分享方式</button>
+  </div>
+  <p class="share-note">分享前可以修改文字；按下平台按鈕後，仍需要由你自行確認並送出，不會自動發布。</p>
+  <div class="share-status" id="share-status" role="status" aria-live="polite"></div>
+  <div class="instagram-help" id="instagram-help" hidden>
+    <h3>Instagram 限時動態分享方式</h3>
+    <p>Instagram 不支援由一般網站直接把文字和網址預填到限時動態。請先複製分享文字，再複製案件連結；到 Instagram 建立限時動態後，使用「連結」貼紙加入案件網址。</p>
+    <div class="instagram-help-actions">
+      <button class="share-btn share-btn-secondary" id="copy-share-text" type="button">複製分享文字</button>
+      <button class="share-btn share-btn-secondary" id="copy-instagram-url" type="button">複製案件連結</button>
+      <a class="share-btn share-btn-instagram" href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer">開啟 Instagram</a>
+    </div>
+  </div>
+</section>
 <section class="site-cta" aria-label="自然大叔服務預約">
   <h2>需要冷氣、洗衣機、水塔或自來水管清洗？</h2>
   <p>自然大叔提供到府專業清洗、透明價格、完工保固與照片紀錄。可先 LINE 傳照片快速估價，也可以直接線上預約。</p>
@@ -401,32 +456,6 @@ function render(slug, data){
     input.select();
   }
 
-  const first = qsel('share');
-  if (first){
-    first.textContent = '連結分享';
-    first.href = '#';
-    first.removeAttribute('target');
-    first.removeAttribute('rel');
-    const onShare = async function(e){
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      const slug0 = getSlug();
-      const sp0 = new URL(location.href).searchParams;
-      const showDates0 = sp0.get('showDates') === '1';
-      const basePath0 = location.pathname.replace(/\/post\.html$/,'');
-      const shareUrl = location.origin + basePath0 + '/' + encodeURIComponent(slug0 || '') + (showDates0 ? '?showDates=1' : '');
-      const title = (qsel('title') && qsel('title').textContent) || document.title || '分享';
-      try{
-        if (navigator.share){ await navigator.share({ title, url: shareUrl }); }
-        else if (navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(shareUrl); showAlert('已複製分享連結'); }
-        else { showPrompt('複製此連結：', shareUrl); }
-      }catch(_){ }
-    };
-    const clone = first.cloneNode(true);
-    first.parentNode.replaceChild(clone, first);
-    clone.addEventListener('click', onShare, true);
-  }
-
   const grid = qsel('images'); if (grid) grid.innerHTML = '';
   const hasGroups = Array.isArray(data.groups) && data.groups.some(function(g){ return Array.isArray(g.items) && g.items.length; });
   function renderPhotoCard(parent, it){
@@ -471,6 +500,110 @@ function render(slug, data){
       z.removeAttribute('target'); z.removeAttribute('rel');
     }
   }catch(_){}
+
+  // Customer-controlled social sharing: shown only after the full photo record.
+  (function setupCustomerSharing(){
+    const section = qsel('customer-share');
+    const messageField = qsel('share-message');
+    const urlField = qsel('share-url');
+    const status = qsel('share-status');
+    const instagramHelp = qsel('instagram-help');
+    const instagramButton = qsel('share-instagram');
+    if (!section || !messageField || !urlField) return;
+
+    const params = new URL(location.href).searchParams;
+    const showDates = params.get('showDates') === '1';
+    const shareUrl = location.origin + '/' + encodeURIComponent(slug || '') + (showDates ? '?showDates=1' : '');
+    urlField.value = shareUrl;
+    messageField.value = '分享一下這次家裡的清洗紀錄！😊\n裡面有清洗的照片和相關說明，有興趣的朋友可以看看喔！\n\n📸 清洗紀錄：' + shareUrl;
+    section.hidden = false;
+
+    function setStatus(message){ if (status) status.textContent = message || ''; }
+    function getMessage(){
+      const text = (messageField.value || '').trim();
+      if (!text) return '📸 清洗紀錄：' + shareUrl;
+      return text.includes(shareUrl) ? text : text + '\n\n📸 清洗紀錄：' + shareUrl;
+    }
+    async function copyText(text){
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+      } catch (_) {}
+      try {
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        temp.setAttribute('readonly', '');
+        temp.style.position = 'fixed';
+        temp.style.left = '-9999px';
+        temp.style.top = '0';
+        document.body.appendChild(temp);
+        temp.select();
+        const ok = document.execCommand('copy');
+        temp.remove();
+        return !!ok;
+      } catch (_) { return false; }
+    }
+    function openShareWindow(url){
+      const opened = window.open(url, '_blank');
+      if (opened) {
+        try { opened.opener = null; } catch (_) {}
+        return true;
+      }
+      setStatus('瀏覽器可能封鎖了新視窗，請允許此網站開啟分享視窗，或使用下方複製功能。');
+      return false;
+    }
+
+    const lineButton = qsel('share-line');
+    if (lineButton) lineButton.addEventListener('click', function(){
+      const url = 'https://line.me/R/share?text=' + encodeURIComponent(getMessage());
+      setStatus('正在開啟 LINE 分享畫面；請選擇好友或群組，確認內容後再送出。');
+      openShareWindow(url);
+    });
+
+    const facebookButton = qsel('share-facebook');
+    if (facebookButton) facebookButton.addEventListener('click', function(){
+      // Open synchronously from the click gesture so popup blockers are less likely to interfere.
+      const popupOpened = openShareWindow('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareUrl));
+      copyText(getMessage()).then(function(ok){
+        const prefix = popupOpened ? '已開啟 Facebook 分享畫面。' : '瀏覽器可能封鎖了 Facebook 分享視窗。';
+        setStatus(ok
+          ? prefix + '分享文字已複製；如想附上文字，可在 Facebook 分享畫面自行貼上。Facebook 不允許網站預先填入貼文文字。'
+          : prefix + 'Facebook 不允許網站預先填入貼文文字，你可以自行複製上方文字後貼上。');
+      });
+    });
+
+    const threadsButton = qsel('share-threads');
+    if (threadsButton) threadsButton.addEventListener('click', function(){
+      const url = 'https://www.threads.net/intent/post?text=' + encodeURIComponent(getMessage());
+      setStatus('正在開啟 Threads 發文畫面；請檢查文字與連結，再自行發布。');
+      openShareWindow(url);
+    });
+
+    if (instagramButton && instagramHelp){
+      instagramButton.addEventListener('click', function(){
+        const willShow = instagramHelp.hidden;
+        instagramHelp.hidden = !willShow;
+        instagramButton.setAttribute('aria-expanded', willShow ? 'true' : 'false');
+        setStatus(willShow ? 'Instagram 需要先複製文字和連結，再到限時動態使用「連結」貼紙。' : '已收合 Instagram 分享說明。');
+        if (willShow) instagramHelp.scrollIntoView({behavior:'smooth', block:'nearest'});
+      });
+    }
+
+    const copyUrlButton = qsel('copy-share-url');
+    if (copyUrlButton) copyUrlButton.addEventListener('click', function(){
+      copyText(shareUrl).then(function(ok){ setStatus(ok ? '已複製本次清洗紀錄連結。' : '無法自動複製，請長按或選取上方網址後複製。'); });
+    });
+    const copyInstagramUrlButton = qsel('copy-instagram-url');
+    if (copyInstagramUrlButton) copyInstagramUrlButton.addEventListener('click', function(){
+      copyText(shareUrl).then(function(ok){ setStatus(ok ? '已複製案件連結；請在 Instagram 限時動態加入「連結」貼紙並貼上。' : '無法自動複製，請選取上方網址後複製。'); });
+    });
+    const copyTextButton = qsel('copy-share-text');
+    if (copyTextButton) copyTextButton.addEventListener('click', function(){
+      copyText(getMessage()).then(function(ok){ setStatus(ok ? '已複製分享文字（含案件連結）。' : '無法自動複製，請選取文字框中的內容後複製。'); });
+    });
+  })();
 }
 
 // Load
