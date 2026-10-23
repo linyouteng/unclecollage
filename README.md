@@ -34,4 +34,24 @@
 - Threads：開啟發文意圖頁並預填文字及案件網址。
 - Instagram：提供複製文案、複製案件網址及開啟 Instagram 的步驟，提醒客戶在限時動態使用「連結」貼紙。
 - 所有平台均由客戶自行確認及發布，不會自動發文。
-- Service Worker 快取版本升級至 `v1.0.6`，讓已安裝的 PWA 能更新新的分享頁面。
+- Service Worker 快取版本升級至 `v1.0.7`，讓已安裝的 PWA 能更新新的分享頁面。
+
+
+## GA4 追蹤（2026-10-23）
+
+公開的 `gallery.html` 與 `post.html` 已加入 GA4，使用評估 ID `G-Y1M01156XR`。管理員已登入時會略過案例清單的追蹤，避免管理操作大量混入公開網站數據。
+
+追蹤事件包括：
+
+- `page_view`：案例清單或清洗紀錄頁瀏覽（詳情頁統一使用虛擬路徑 `/case.html`）。
+- `case_open`：從案例縮圖或標題開啟案例。
+- `case_list_filter`、`case_search`、`case_category_filter`、`case_list_pagination`：案例清單篩選、搜尋、分類與翻頁。
+- `case_photo_view`：開啟或切換放大照片。
+- `case_zip_download`：點擊下載 ZIP。
+- `customer_share_click`：點選 LINE、Facebook、Threads 或 Instagram 分享方式。
+- `customer_share_copy`：複製分享網址或文字。
+- `cta_click`、`booking_click`、`line_click`、`pricing_click`、`official_site_click`：點擊服務行動按鈕。
+
+隱私保護：GA4 使用固定虛擬頁面路徑及通用頁面標題；不傳送案件代碼、案件標題、案件說明、照片網址、顧客輸入的分享文字或搜尋字詞。事件只使用固定類別、入口位置、照片序號及結果數量等必要參數。分享事件只表示使用者點擊分享／複製操作，不代表已成功發布。
+
+注意：此版本只為照片案例清單與分享頁加入追蹤；正式預約成功仍須在預約系統中另行驗收，`booking_click` 只代表點擊預約入口，不等於完成預約。

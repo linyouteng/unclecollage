@@ -2,6 +2,72 @@
 
 <html lang="zh-Hant">
 <head>
+<!-- GA4：照片案例追蹤（使用固定虛擬頁面路徑，避免把案件代碼、案件標題或說明送進分析資料） -->
+<script>
+(function () {
+  'use strict';
+  var GA_ID = 'G-Y1M01156XR';
+  var isGalleryPage = location.pathname === '/gallery.html' || location.pathname === '/';
+  var safePageLocation = isGalleryPage
+    ? 'https://photos.naturaluncle.com/gallery.html'
+    : 'https://photos.naturaluncle.com/case.html';
+  var safePageTitle = isGalleryPage
+    ? '自然大叔｜清洗案例見證'
+    : '自然大叔｜清洗照片紀錄';
+  var safeReferrer = '';
+  try {
+    if (document.referrer) safeReferrer = new URL(document.referrer).origin + '/';
+  } catch (_) {}
+
+  function isAdminSession() {
+    if (!isGalleryPage) return false;
+    try { return !!localStorage.getItem('adminToken'); } catch (_) { return false; }
+  }
+
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+  var initialized = false;
+
+  window.nuGa4Init = function () {
+    if (initialized || isAdminSession()) return false;
+    window.gtag('js', new Date());
+    var config = {
+      send_page_view: false,
+      page_location: safePageLocation,
+      page_title: safePageTitle,
+      allow_google_signals: false,
+      allow_ad_personalization_signals: false
+    };
+    if (safeReferrer) config.page_referrer = safeReferrer;
+    window.gtag('config', GA_ID, config);
+
+    var script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+    document.head.appendChild(script);
+    initialized = true;
+    return true;
+  };
+
+  window.nuTrack = function (eventName, params) {
+    if (!initialized || isAdminSession() || !eventName) return;
+    var payload = Object.assign({}, params || {});
+    // Every event uses a sanitized virtual page and generic title; never attach case slug/title/text.
+    payload.page_location = safePageLocation;
+    payload.page_title = safePageTitle;
+    if (safeReferrer) payload.page_referrer = safeReferrer;
+    payload.transport_type = 'beacon';
+    window.gtag('event', eventName, payload);
+  };
+
+  window.nuTrackPageView = function () {
+    window.nuTrack('page_view', {});
+  };
+
+  window.nuGa4Init();
+})();
+</script>
+
 <meta content="#0f172a" name="theme-color"/>
 <meta charset="utf-8"/>
 <title>自然大叔｜清洗前後照片紀錄</title>
@@ -337,6 +403,7 @@ function initLightbox(images){
     img.alt = it.alt || '';
     cap.textContent = it.caption || '';
     count.textContent = (LB_INDEX+1) + ' / ' + LB_IMAGES.length;
+    try { if (window.nuTrack) window.nuTrack('case_photo_view', { photo_index: LB_INDEX + 1 }); } catch (_) {}
   }
   window.openLightbox = function(i){
     if (!LB_IMAGES.length) return;
@@ -497,6 +564,9 @@ function render(slug, data){
       z.href = `/.netlify/functions/zip-images?slug=${encodeURIComponent(slug)}`;
       z.setAttribute('download','');
       z.onclick = null;
+      z.addEventListener('click', function(){
+        try { if (window.nuTrack) window.nuTrack('case_zip_download', {}); } catch (_) {}
+      });
       z.removeAttribute('target'); z.removeAttribute('rel');
     }
   }catch(_){}
@@ -557,6 +627,7 @@ function render(slug, data){
 
     const lineButton = qsel('share-line');
     if (lineButton) lineButton.addEventListener('click', function(){
+      try { if (window.nuTrack) window.nuTrack('customer_share_click', { platform: 'line' }); } catch (_) {}
       const url = 'https://line.me/R/share?text=' + encodeURIComponent(getMessage());
       setStatus('正在開啟 LINE 分享畫面；請選擇好友或群組，確認內容後再送出。');
       openShareWindow(url);
@@ -564,6 +635,7 @@ function render(slug, data){
 
     const facebookButton = qsel('share-facebook');
     if (facebookButton) facebookButton.addEventListener('click', function(){
+      try { if (window.nuTrack) window.nuTrack('customer_share_click', { platform: 'facebook' }); } catch (_) {}
       // Open synchronously from the click gesture so popup blockers are less likely to interfere.
       const popupOpened = openShareWindow('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareUrl));
       copyText(getMessage()).then(function(ok){
@@ -576,6 +648,7 @@ function render(slug, data){
 
     const threadsButton = qsel('share-threads');
     if (threadsButton) threadsButton.addEventListener('click', function(){
+      try { if (window.nuTrack) window.nuTrack('customer_share_click', { platform: 'threads' }); } catch (_) {}
       const url = 'https://www.threads.net/intent/post?text=' + encodeURIComponent(getMessage());
       setStatus('正在開啟 Threads 發文畫面；請檢查文字與連結，再自行發布。');
       openShareWindow(url);
@@ -584,6 +657,9 @@ function render(slug, data){
     if (instagramButton && instagramHelp){
       instagramButton.addEventListener('click', function(){
         const willShow = instagramHelp.hidden;
+        if (willShow) {
+          try { if (window.nuTrack) window.nuTrack('customer_share_click', { platform: 'instagram' }); } catch (_) {}
+        }
         instagramHelp.hidden = !willShow;
         instagramButton.setAttribute('aria-expanded', willShow ? 'true' : 'false');
         setStatus(willShow ? 'Instagram 需要先複製文字和連結，再到限時動態使用「連結」貼紙。' : '已收合 Instagram 分享說明。');
@@ -593,18 +669,48 @@ function render(slug, data){
 
     const copyUrlButton = qsel('copy-share-url');
     if (copyUrlButton) copyUrlButton.addEventListener('click', function(){
+      try { if (window.nuTrack) window.nuTrack('customer_share_copy', { content_type: 'share_url' }); } catch (_) {}
       copyText(shareUrl).then(function(ok){ setStatus(ok ? '已複製本次清洗紀錄連結。' : '無法自動複製，請長按或選取上方網址後複製。'); });
     });
     const copyInstagramUrlButton = qsel('copy-instagram-url');
     if (copyInstagramUrlButton) copyInstagramUrlButton.addEventListener('click', function(){
+      try { if (window.nuTrack) window.nuTrack('customer_share_copy', { content_type: 'instagram_url' }); } catch (_) {}
       copyText(shareUrl).then(function(ok){ setStatus(ok ? '已複製案件連結；請在 Instagram 限時動態加入「連結」貼紙並貼上。' : '無法自動複製，請選取上方網址後複製。'); });
     });
     const copyTextButton = qsel('copy-share-text');
     if (copyTextButton) copyTextButton.addEventListener('click', function(){
+      try { if (window.nuTrack) window.nuTrack('customer_share_copy', { content_type: 'share_text' }); } catch (_) {}
       copyText(getMessage()).then(function(ok){ setStatus(ok ? '已複製分享文字（含案件連結）。' : '無法自動複製，請選取文字框中的內容後複製。'); });
     });
   })();
 }
+
+// Public CTA tracking: fixed event labels only; no link URL or case identifier is sent.
+document.addEventListener('click', function(event){
+  const link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+  if (!link) return;
+  if (link.id === 'zip') return; // handled above with case_zip_download
+  let url;
+  try { url = new URL(link.href, location.href); } catch (_) { return; }
+  let type = '';
+  if (url.hostname === 'line.me') type = 'line';
+  else if (url.hostname === 'booking.naturaluncle.com') type = 'booking';
+  else if (url.hostname === 'price.naturaluncle.com') type = 'pricing';
+  else if (url.hostname === 'naturaluncle.com' || url.hostname === 'www.naturaluncle.com') type = 'official_site';
+  if (!type) return;
+  let placement = 'other';
+  if (link.closest('.brand-links')) placement = 'navigation';
+  else if (link.closest('.site-cta-actions')) placement = 'service_cta';
+  try {
+    if (window.nuTrack) {
+      window.nuTrack('cta_click', { cta_type: type, placement: placement });
+      if (type === 'booking') window.nuTrack('booking_click', { placement: placement });
+      else if (type === 'line') window.nuTrack('line_click', { placement: placement });
+      else if (type === 'pricing') window.nuTrack('pricing_click', { placement: placement });
+      else if (type === 'official_site') window.nuTrack('official_site_click', { placement: placement });
+    }
+  } catch (_) {}
+});
 
 // Load
 async function load(){
@@ -614,6 +720,7 @@ async function load(){
     if (!res.ok) throw new Error('載入作品失敗');
     const data = await res.json();
     render(slug, data);
+    if (typeof window.nuTrackPageView === 'function') window.nuTrackPageView();
   }catch(e){
     if (qsel('title')) setText('title', e.message || e);
   }

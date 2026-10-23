@@ -1,6 +1,72 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
+<!-- GA4：照片案例追蹤（使用固定虛擬頁面路徑，避免把案件代碼、案件標題或說明送進分析資料） -->
+<script>
+(function () {
+  'use strict';
+  var GA_ID = 'G-Y1M01156XR';
+  var isGalleryPage = location.pathname === '/gallery.html' || location.pathname === '/';
+  var safePageLocation = isGalleryPage
+    ? 'https://photos.naturaluncle.com/gallery.html'
+    : 'https://photos.naturaluncle.com/case.html';
+  var safePageTitle = isGalleryPage
+    ? '自然大叔｜清洗案例見證'
+    : '自然大叔｜清洗照片紀錄';
+  var safeReferrer = '';
+  try {
+    if (document.referrer) safeReferrer = new URL(document.referrer).origin + '/';
+  } catch (_) {}
+
+  function isAdminSession() {
+    if (!isGalleryPage) return false;
+    try { return !!localStorage.getItem('adminToken'); } catch (_) { return false; }
+  }
+
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+  var initialized = false;
+
+  window.nuGa4Init = function () {
+    if (initialized || isAdminSession()) return false;
+    window.gtag('js', new Date());
+    var config = {
+      send_page_view: false,
+      page_location: safePageLocation,
+      page_title: safePageTitle,
+      allow_google_signals: false,
+      allow_ad_personalization_signals: false
+    };
+    if (safeReferrer) config.page_referrer = safeReferrer;
+    window.gtag('config', GA_ID, config);
+
+    var script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+    document.head.appendChild(script);
+    initialized = true;
+    return true;
+  };
+
+  window.nuTrack = function (eventName, params) {
+    if (!initialized || isAdminSession() || !eventName) return;
+    var payload = Object.assign({}, params || {});
+    // Every event uses a sanitized virtual page and generic title; never attach case slug/title/text.
+    payload.page_location = safePageLocation;
+    payload.page_title = safePageTitle;
+    if (safeReferrer) payload.page_referrer = safeReferrer;
+    payload.transport_type = 'beacon';
+    window.gtag('event', eventName, payload);
+  };
+
+  window.nuTrackPageView = function () {
+    window.nuTrack('page_view', {});
+  };
+
+  window.nuGa4Init();
+})();
+</script>
+
   <!-- favicon -->
   <link rel="apple-touch-icon" sizes="180x180" href="https://res.cloudinary.com/dijzndzw2/image/upload/c_scale,w_180/v1757176751/logo-3_hddq08.png"/>
 <link rel="shortcut icon" href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png"/>
@@ -693,6 +759,39 @@
   const PAGE_SIZE = 6;
   const TOKEN_KEY = 'adminToken';
 
+  function trackEvent(name, params){
+    try { if (window.nuTrack) window.nuTrack(name, params || {}); } catch (_) {}
+  }
+  function trackCta(type, placement){
+    trackEvent('cta_click', { cta_type: type, placement: placement });
+    if (type === 'booking') trackEvent('booking_click', { placement: placement });
+    else if (type === 'line') trackEvent('line_click', { placement: placement });
+    else if (type === 'pricing') trackEvent('pricing_click', { placement: placement });
+    else if (type === 'official_site') trackEvent('official_site_click', { placement: placement });
+  }
+  function getLinkPlacement(link){
+    if (link.closest('.brand-links')) return 'navigation';
+    if (link.closest('.case-hero-actions')) return 'hero';
+    return 'other';
+  }
+  function initPublicAnalyticsEvents(){
+    document.addEventListener('click', function(event){
+      const link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+      if (!link) return;
+      if (link.classList.contains('thumb-link') || link.classList.contains('title-link')) {
+        trackEvent('case_open', { entry_point: link.classList.contains('thumb-link') ? 'thumbnail' : 'title' });
+        return;
+      }
+      let url;
+      try { url = new URL(link.href, location.href); } catch (_) { return; }
+      const placement = getLinkPlacement(link);
+      if (url.hostname === 'line.me') trackCta('line', placement);
+      else if (url.hostname === 'booking.naturaluncle.com') trackCta('booking', placement);
+      else if (url.hostname === 'price.naturaluncle.com') trackCta('pricing', placement);
+      else if (url.hostname === 'naturaluncle.com' || url.hostname === 'www.naturaluncle.com') trackCta('official_site', placement);
+    });
+  }
+
   const ADMIN_PASS_STORAGE_KEY = 'admin_saved_password';
   const ADMIN_REMEMBER_STORAGE_KEY = 'admin_remember_password';
   let allItems = [];
@@ -819,6 +918,10 @@
   function adminLogout(){
     clearToken();
     refreshAdminUI();
+    if (typeof window.nuGa4Init === 'function') {
+      const startedTracking = window.nuGa4Init();
+      if (startedTracking && typeof window.nuTrackPageView === 'function') window.nuTrackPageView();
+    }
     load();
   }
 
@@ -1116,12 +1219,14 @@
     document.getElementById('prev').onclick = ()=>{
       if(currentPage>1){
         currentPage--;
+        trackEvent('case_list_pagination', { direction: 'previous' });
         render(applyFilters(allItems));
       }
     };
     document.getElementById('next').onclick = ()=>{
       if(currentPage<totalPages){
         currentPage++;
+        trackEvent('case_list_pagination', { direction: 'next' });
         render(applyFilters(allItems));
       }
     };
@@ -1147,7 +1252,15 @@
     document.getElementById('filters').addEventListener('submit', (event)=>{
       event.preventDefault();
       currentPage = 1;
-      render(applyFilters(allItems));
+      const results = applyFilters(allItems);
+      render(results);
+      const query = document.getElementById('q').value.trim();
+      trackEvent('case_list_filter', {
+        has_search: !!query,
+        sort_order: document.getElementById('sort').value,
+        results_count: results.length
+      });
+      if (query) trackEvent('case_search', { results_count: results.length });
     });
 
     document.getElementById('admin-login-btn')
@@ -1168,6 +1281,9 @@
           qInput.value = tag;
         }
         currentPage = 1;
+        trackEvent('case_category_filter', {
+          category: tag === '冷氣' ? 'air_conditioner' : (tag === '洗衣機' ? 'washing_machine' : (tag === '水塔' ? 'water_tank' : 'other'))
+        });
         render(applyFilters(allItems));
       });
     });
@@ -1177,6 +1293,8 @@
     initRememberPassword();
     refreshAdminUI();
     initEvents();
+    initPublicAnalyticsEvents();
+    if (typeof window.nuTrackPageView === 'function') window.nuTrackPageView();
     load();
   }
 
